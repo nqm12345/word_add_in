@@ -1,33 +1,20 @@
 {
   "name": "word-server-editor",
-  "version": "1.0.0",
-  "description": "Word Add-in for editing documents directly from server",
-  "main": "server/server.js",
+  "version": "2.0.0",
+  "description": "Word editor with ms-word:ofe|u| protocol and MongoDB storage",
+  "main": "server/server-mongodb.js",
   "scripts": {
-    "start": "node server/server.js",
-    "start:mongo": "node server/server-mongodb.js",
-    "start:webdav": "node server/webdav-mongodb.js",
-    "start:all": "concurrently \"npm run start:mongo\" \"npm run start:webdav\"",
-    "dev": "concurrently \"npm run dev-server\" \"npm run dev-client\"",
-    "dev:mongo": "concurrently \"npm run dev-server:mongo\" \"npm run dev-client\"",
-    "dev-server": "nodemon server/server.js",
-    "dev-server:mongo": "nodemon server/server-mongodb.js",
-    "dev-client": "office-addin-debugging start manifest.xml desktop"
+    "start": "concurrently \"node server/server-mongodb.js\" \"node server/webdav-simple.js\"",
+    "dev": "concurrently \"nodemon server/server-mongodb.js\" \"nodemon server/webdav-simple.js\""
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "express-basic-auth": "^1.2.1",
-    "mammoth": "^1.6.0",
     "mongodb": "^7.0.0",
-    "multer": "^1.4.5-lts.1",
-    "officegen": "^0.6.5",
-    "webdav-server": "^2.6.2"
+    "multer": "^1.4.5-lts.1"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "nodemon": "^3.0.1",
-    "office-addin-debugging": "^5.0.0",
-    "office-addin-dev-certs": "^1.13.0"
+    "nodemon": "^3.0.1"
   }
 }

@@ -635,12 +635,16 @@
             }
         }
 
-        // Edit file (open in Word)
+        // Edit file (open in Word via ms-word:ofe|u| protocol with WebDAV)
         function editFile(filename) {
-            const fileUrl = `${API_BASE}/documents/${encodeURIComponent(filename)}`;
-            const msWordUrl = `ms-word:ofe|u|${fileUrl}`;
+            // Use WebDAV endpoint for full read-write support
+            const webdavUrl = `https://wordserver.local:3001/${encodeURIComponent(filename)}`;
+            const msWordUrl = `ms-word:ofe|u|${webdavUrl}`;
+            
+            console.log('Opening Word with WebDAV URL:', msWordUrl);
+            console.log('WebDAV endpoint:', webdavUrl);
             window.location.href = msWordUrl;
-            showStatus('Đang mở Word...', 'success');
+            showStatus('Đang mở Word với WebDAV...', 'success');
         }
 
         // Download file

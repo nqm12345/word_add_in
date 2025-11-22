@@ -1,140 +1,237 @@
-# Word Server Editor - Add-in
+# Word Editor with WebDAV & MongoDB
 
-Ứng dụng Word Add-in cho phép chỉnh sửa file Word trực tiếp từ server mà không cần tải về.
+Hệ thống quản lý và chỉnh sửa tài liệu Word với khả năng auto-save trực tiếp từ Word Desktop về server.
 
-## ✨ Tính năng
+## ✨ Tính Năng
 
-- 📂 **Xem danh sách file** trên server
-- 📄 **Mở file Word** trực tiếp vào Word từ server
-- 💾 **Lưu file** trực tiếp lên server
-- 📤 **Upload file mới** lên server
-- 🗑️ **Xóa file** từ server
-- 🔄 **Đồng bộ tự động** - không cần tải về/upload thủ công
+- ✅ **WebDAV Server** - Full implementation cho Word Desktop
+- ✅ **MongoDB GridFS** - Lưu trữ files trong database
+- ✅ **Auto-Save** - Ctrl+S trong Word tự động lưu về server
+- ✅ **Dashboard** - Web UI quản lý files
+- ✅ **HTTPS** - Secured với mkcert certificates
+- ✅ **ms-word:ofe|u|** - Microsoft Office protocol
 
-## 🚀 Cài đặt
+## 🏗️ Kiến Trúc
 
-### Yêu cầu
-- Node.js (phiên bản 14 trở lên)
-- Microsoft Word (Desktop hoặc Online)
+```
+┌─────────────────────────────────────┐
+│  Dashboard (Browser)                │
+│  Port 3000 - Web UI                 │
+│  - Upload files                     │
+│  - Download files                   │
+│  - Delete files                     │
+│  - Open in Word (via WebDAV)        │
+└────────────┬────────────────────────┘
+             │
+             ├─────────────────┬──────────────────┐
+             │                 │                  │
+             ↓                 ↓                  ↓
+┌─────────────────────┐ ┌──────────────┐ ┌──────────────┐
+│  API Server         │ │ WebDAV Server│ │ Word Desktop │
+│  Port 3000          │ │ Port 3001    │ │              │
+│  - List files       │ │ - PROPFIND   │ │ - Edit docs  │
+│  - Upload           │ │ - GET        │ │ - Ctrl+S     │
+│  - Download         │ │ - PUT        │ │ - Auto-save  │
+│  - Delete           │ │ - LOCK       │ │              │
+└──────────┬──────────┘ └───────┬──────┘ └──────┬───────┘
+           │                    │                │
+           └────────────────────┴────────────────┘
+                              │
+                              ↓
+                   ┌────────────────────┐
+                   │  MongoDB GridFS    │
+                   │  Files Storage     │
+                   └────────────────────┘
+```
 
-### Các bước cài đặt
+## 📋 Yêu Cầu
 
-1. **Cài đặt dependencies:**
+- Node.js 16+
+- MongoDB 4.4+
+- mkcert (cho HTTPS certificates)
+- Windows với Word Desktop
+
+## 🚀 Cài Đặt
+
+### 1. Clone & Install
+
 ```bash
+git clone <repo>
+cd datv_word
 npm install
 ```
 
-2. **Tạo SSL certificate cho localhost (chỉ cần làm 1 lần):**
+### 2. Setup MongoDB
+
 ```bash
-npx office-addin-dev-certs install
+# Start MongoDB
+mongod --dbpath <your-data-path>
 ```
 
-3. **Khởi động server:**
+### 3. Setup HTTPS Certificates
+
+```bash
+# Install mkcert
+choco install mkcert
+
+# Generate certificates
+cd datv_word
+mkdir certs
+cd certs
+mkcert wordserver.local
+rename wordserver.local.pem wordserver.local.crt
+rename wordserver.local-key.pem wordserver.local.key
+```
+
+### 4. Setup Hosts File
+
+Thêm vào `C:\Windows\System32\drivers\etc\hosts`:
+
+```
+127.0.0.1 wordserver.local
+```
+
+### 5. Setup Trusted Location (Quan trọng!)
+
+**Chạy script PowerShell:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "ADD_TRUSTED_LOCATION.ps1"
+```
+
+**Hoặc restart máy để apply registry changes.**
+
+## 🎯 Sử Dụng
+
+### Start Servers
+
 ```bash
 npm start
 ```
 
-Server sẽ chạy tại `https://localhost:3000`
+Sẽ chạy 2 servers:
+- API Server: `https://wordserver.local:3000`
+- WebDAV Server: `https://wordserver.local:3001`
 
-## 📖 Hướng dẫn sử dụng
+### Mở Dashboard
 
-### Bước 1: Cài đặt Add-in vào Word
+```
+https://wordserver.local:3000/dashboard.html
+```
 
-1. Mở Microsoft Word
-2. Vào **File** → **Options** → **Trust Center** → **Trust Center Settings**
-3. Chọn **Trusted Add-in Catalogs**
-4. Thêm đường dẫn thư mục chứa `manifest.xml` vào danh sách
-5. Restart Word
+### Workflow
 
-### Bước 2: Load Add-in
+1. **Upload file:**
+   - Click "Upload File"
+   - Chọn file .docx
+   - File lưu vào MongoDB
 
-1. Trong Word, vào tab **Insert**
-2. Chọn **My Add-ins**
-3. Chọn **Shared Folder**
-4. Chọn **Word Server Editor**
+2. **Chỉnh sửa file:**
+   - Click "✏️ Chỉnh sửa"
+   - Word Desktop mở file
+   - Edit content
+   - **Ctrl+S** → Auto-save về server!
 
-### Bước 3: Sử dụng
+3. **Download file:**
+   - Click "📥 Tải xuống"
 
-1. **Mở file từ server:**
-   - Click vào tab "Server Editor" trên ribbon
-   - Chọn file từ danh sách
-   - Click "Mở trong Word"
+4. **Xóa file:**
+   - Click "🗑️ Xóa"
 
-2. **Chỉnh sửa:**
-   - Chỉnh sửa nội dung như bình thường trong Word
+## 🔧 API Endpoints
 
-3. **Lưu lại server:**
-   - Nhập tên file (hoặc giữ nguyên)
-   - Click "Lưu lên Server"
+### API Server (Port 3000)
 
-## 🔧 Cấu hình
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/documents` | List all files |
+| GET | `/api/documents/:filename` | Download file |
+| POST | `/api/upload` | Upload file |
+| DELETE | `/api/documents/:filename` | Delete file |
 
-### Thay đổi cổng server
-Sửa file `server/server.js`:
+### WebDAV Server (Port 3001)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| OPTIONS | `/:filename` | Discovery |
+| PROPFIND | `/:filename` | File properties |
+| GET | `/:filename` | Download file |
+| PUT | `/:filename` | Upload/Update file |
+| LOCK | `/:filename` | Lock file |
+| UNLOCK | `/:filename` | Unlock file |
+| DELETE | `/:filename` | Delete file |
+
+## 📖 Chi Tiết Kỹ Thuật
+
+### WebDAV Implementation
+
+Server implement full WebDAV methods theo RFC 4918:
+
+- **PROPFIND**: Trả về XML với file properties (size, date, type)
+- **LOCK/UNLOCK**: Simple locking mechanism cho Word
+- **GET/PUT**: Download/Upload files từ MongoDB GridFS
+- **DELETE**: Xóa files
+
+### ms-word:ofe|u| Protocol
+
 ```javascript
-const PORT = 3000; // Thay đổi cổng ở đây
+const webdavUrl = 'https://wordserver.local:3001/filename.docx';
+const msWordUrl = 'ms-word:ofe|u|' + webdavUrl;
+window.location.href = msWordUrl;
 ```
 
-### Thay đổi thư mục lưu trữ
-Mặc định file được lưu tại `server/documents/`. Để thay đổi, sửa:
-```javascript
-const STORAGE_DIR = path.join(__dirname, 'documents');
-```
+Word Desktop flow:
+1. OPTIONS → Kiểm tra server capabilities
+2. PROPFIND → Lấy file info
+3. LOCK → Khóa file
+4. GET → Download file
+5. Mở file ở edit mode
+6. User edit → Ctrl+S
+7. PUT → Upload file mới
+8. UNLOCK → Mở khóa
 
-## 🛠️ Development
+### MongoDB GridFS
 
-Chạy ở chế độ development với auto-reload:
-```bash
-npm run dev
-```
+Files được lưu trong MongoDB GridFS:
+- Chunks: 255KB per chunk
+- Metadata: filename, uploadDate, metadata custom
+- Efficient cho files lớn
 
-## 📁 Cấu trúc thư mục
+## ⚠️ Troubleshooting
 
-```
-datv_word/
-├── server/
-│   ├── server.js          # Backend API server
-│   └── documents/         # Thư mục lưu file Word
-├── public/
-│   ├── taskpane.html      # Giao diện chính
-│   ├── taskpane.css       # Styling
-│   ├── taskpane.js        # Logic xử lý
-│   ├── commands.html      # Function file
-│   └── assets/            # Icons
-├── manifest.xml           # Word Add-in manifest
-├── package.json
-└── README.md
-```
+### Word mở file ở chế độ "chỉ đọc"
 
-## 🔌 API Endpoints
+**Nguyên nhân:** Windows chưa trust WebDAV location
 
-- `GET /api/documents` - Lấy danh sách file
-- `GET /api/documents/:filename` - Tải file
-- `GET /api/documents/:filename/content` - Lấy nội dung file (Base64)
-- `POST /api/documents/:filename` - Lưu/cập nhật file
-- `POST /api/upload` - Upload file mới
-- `DELETE /api/documents/:filename` - Xóa file
+**Giải pháp:**
+1. Chạy `ADD_TRUSTED_LOCATION.ps1`
+2. Hoặc restart máy
 
-## 🐛 Troubleshooting
+### Ctrl+S không lưu về server
 
-### Add-in không hiển thị
-- Kiểm tra certificate đã được cài đặt chưa
-- Xóa cache Office: `C:\Users\[User]\AppData\Local\Microsoft\Office\16.0\Wef`
-- Restart Word
+**Kiểm tra:**
+- WebDAV server đang chạy?
+- Terminal có log PUT request không?
+- Trusted Location đã setup chưa?
 
-### Không kết nối được server
-- Kiểm tra server đã chạy chưa (`npm start`)
-- Kiểm tra firewall không chặn port 3000
-- Kiểm tra CORS settings trong `server.js`
+### File không update trên Dashboard
 
-### File không lưu được
-- Kiểm tra quyền ghi vào thư mục `server/documents/`
-- Kiểm tra dung lượng file (giới hạn 50MB)
+**Giải pháp:** Refresh trang (F5)
 
-## 📝 License
+## 📚 Tài Liệu Tham Khảo
 
-MIT License
+- [WebDAV RFC 4918](https://tools.ietf.org/html/rfc4918)
+- [MS Office Protocol](https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-wdvmoduu)
+- [MongoDB GridFS](https://docs.mongodb.com/manual/core/gridfs/)
 
-## 👨‍💻 Author
+## 📄 License
 
-Developed for easy Word document management from server.
+MIT
+
+## 🤝 Contributing
+
+Pull requests are welcome!
+
+---
+
+**Made with ❤️ for seamless Word editing**

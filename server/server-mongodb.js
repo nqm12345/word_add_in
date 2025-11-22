@@ -87,13 +87,11 @@ app.get('/api/documents/:filename', async (req, res) => {
         
         const fileBuffer = await downloadFile(file._id);
         
-        // Headers cho Word nhận diện đây là server document (không phải download)
+        // Headers for file download
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         res.setHeader('Content-Disposition', `inline; filename="${file.filename}"`);
-        res.setHeader('Accept-Ranges', 'bytes');
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
+        res.setHeader('Cache-Control', 'no-cache');
+        
         res.send(fileBuffer);
     } catch (error) {
         console.error('Error downloading document:', error);
@@ -138,7 +136,7 @@ app.get('/api/documents/:filename/content', async (req, res) => {
     }
 });
 
-// API: Lưu/Cập nhật nội dung file
+// API: Lưu/Cập nhật nội dung file (for Add-in if needed)
 app.post('/api/documents/:filename/content', async (req, res) => {
     try {
         const filename = req.params.filename;
