@@ -1,19 +1,31 @@
 const https = require('https');
-const fs = require('fs');
-const path = require('path');
 const url = require('url');
+
+const config = require('./config');
+const { loadSSLCertificates } = require('./utils/ssl');
+const logger = require('./utils/logger');
 const { connectDB, findFileByName, uploadFile, downloadFile, deleteFile, listFiles } = require('./database');
 
-// Simple WebDAV server (GET/PUT/OPTIONS only)
 class SimpleWebDAVServer {
     constructor() {
         this.db = null;
     }
 
     async init() {
-        console.log('🔧 Initializing Simple WebDAV Server...');
         this.db = await connectDB();
-        console.log('✅ MongoDB connected');
+    }
+
+    setHeaders(res) {
+        // CORS
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS, PROPFIND');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Depth, Authorization, If, Lock-Token, Timeout');
+        res.setHeader('Access-Control-Expose-Headers', 'DAV, Content-Length, Allow');
+        
+        // WebDAV
+        res.setHeader('MS-Author-Via', 'DAV');
+        res.setHeader('DAV', '1, 2');
+        res.setHeader('Allow', 'OPTIONS, GET, PUT, DELETE, PROPFIND');
     }
 
     async handleRequest(req, res) {
@@ -21,61 +33,49 @@ class SimpleWebDAVServer {
         const pathname = decodeURIComponent(parsedUrl.pathname);
         const fileName = pathname.replace(/^\//, '');
 
-        console.log(`📡 [${req.method}] ${pathname}`);
-
-        // CORS headers
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS, PROPFIND');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Depth, Authorization, If, Lock-Token, Timeout');
-        res.setHeader('Access-Control-Expose-Headers', 'DAV, Content-Length, Allow');
-
-        // WebDAV headers
-        res.setHeader('MS-Author-Via', 'DAV');
-        res.setHeader('DAV', '1, 2');
-        res.setHeader('Allow', 'OPTIONS, GET, PUT, DELETE, PROPFIND');
+        this.setHeaders(res);
 
         try {
             switch (req.method) {
                 case 'OPTIONS':
-                    await this.handleOptions(req, res, fileName);
+                    await this.handleOptions(res);
                     break;
                 case 'PROPFIND':
-                    await this.handlePropfind(req, res, fileName);
+                    await this.handlePropfind(res, fileName);
                     break;
                 case 'GET':
-                    await this.handleGet(req, res, fileName);
+                    await this.handleGet(res, fileName);
                     break;
                 case 'PUT':
                     await this.handlePut(req, res, fileName);
                     break;
                 case 'DELETE':
-                    await this.handleDelete(req, res, fileName);
+                    await this.handleDelete(res, fileName);
                     break;
                 case 'LOCK':
-                    await this.handleLock(req, res, fileName);
+                    await this.handleLock(res, fileName);
                     break;
                 case 'UNLOCK':
-                    await this.handleUnlock(req, res, fileName);
+                    await this.handleUnlock(res);
                     break;
                 default:
-                    res.writeHead(405, { 'Content-Type': 'text/plain' });
+                    res.writeHead(405);
                     res.end('Method Not Allowed');
             }
         } catch (error) {
-            console.error(`❌ Error handling ${req.method}:`, error);
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            logger.error(`WebDAV ${req.method} error:`, error.message);
+            res.writeHead(500);
             res.end('Internal Server Error');
         }
     }
 
-    async handleOptions(req, res, fileName) {
+    async handleOptions(res) {
         res.writeHead(200);
         res.end();
     }
 
-    async handlePropfind(req, res, fileName) {
+    async handlePropfind(res, fileName) {
         if (!fileName) {
-            // Root - list all files
             const files = await listFiles();
             
             const xml = `<?xml version="1.0" encoding="utf-8"?>
@@ -98,7 +98,6 @@ ${files.map(file => `  <D:response>
             res.writeHead(207, { 'Content-Type': 'application/xml; charset=utf-8' });
             res.end(xml);
         } else {
-            // Single file
             const file = await findFileByName(fileName);
             
             if (!file) {
@@ -129,7 +128,7 @@ ${files.map(file => `  <D:response>
         }
     }
 
-    async handleGet(req, res, fileName) {
+    async handleGet(res, fileName) {
         if (!fileName) {
             res.writeHead(400);
             res.end('Filename required');
@@ -139,7 +138,6 @@ ${files.map(file => `  <D:response>
         const file = await findFileByName(fileName);
         
         if (!file) {
-            console.log(`❌ File not found: ${fileName}`);
             res.writeHead(404);
             res.end('File not found');
             return;
@@ -156,7 +154,6 @@ ${files.map(file => `  <D:response>
         });
         
         res.end(fileBuffer);
-        console.log(`✅ [GET] ${fileName} (${fileBuffer.length} bytes)`);
     }
 
     async handlePut(req, res, fileName) {
@@ -168,40 +165,35 @@ ${files.map(file => `  <D:response>
 
         const chunks = [];
         
-        req.on('data', chunk => {
-            chunks.push(chunk);
-        });
+        req.on('data', chunk => chunks.push(chunk));
 
         req.on('end', async () => {
             try {
                 const buffer = Buffer.concat(chunks);
                 
-                // Delete old version
                 const existingFile = await findFileByName(fileName);
                 if (existingFile) {
                     await deleteFile(existingFile._id);
-                    console.log(`🗑️ [PUT] Deleted old: ${fileName}`);
                 }
 
-                // Upload new version
                 await uploadFile(buffer, fileName, {
                     uploadedBy: 'Word Desktop',
                     source: 'WebDAV',
                     updatedAt: new Date()
                 });
 
-                res.writeHead(204); // No Content
+                res.writeHead(204);
                 res.end();
-                console.log(`✅ [PUT] Saved: ${fileName} (${buffer.length} bytes)`);
+                logger.success(`WebDAV PUT: ${fileName}`);
             } catch (error) {
-                console.error(`❌ [PUT] Error:`, error);
+                logger.error(`WebDAV PUT error:`, error.message);
                 res.writeHead(500);
                 res.end('Internal Server Error');
             }
         });
     }
 
-    async handleDelete(req, res, fileName) {
+    async handleDelete(res, fileName) {
         if (!fileName) {
             res.writeHead(400);
             res.end('Filename required');
@@ -219,11 +211,9 @@ ${files.map(file => `  <D:response>
         await deleteFile(file._id);
         res.writeHead(204);
         res.end();
-        console.log(`✅ [DELETE] ${fileName}`);
     }
 
-    async handleLock(req, res, fileName) {
-        // Simple implementation - always allow lock
+    async handleLock(res, fileName) {
         const xml = `<?xml version="1.0" encoding="utf-8"?>
 <D:prop xmlns:D="DAV:">
   <D:lockdiscovery>
@@ -244,72 +234,42 @@ ${files.map(file => `  <D:response>
             'Lock-Token': `<opaquelocktoken:${Date.now()}>`
         });
         res.end(xml);
-        console.log(`🔒 [LOCK] ${fileName}`);
     }
 
-    async handleUnlock(req, res, fileName) {
-        // Simple implementation - always allow unlock
+    async handleUnlock(res) {
         res.writeHead(204);
         res.end();
-        console.log(`🔓 [UNLOCK] ${fileName}`);
     }
 }
 
-// Start server
 async function startServer() {
-    const server = new SimpleWebDAVServer();
-    await server.init();
+    try {
+        const server = new SimpleWebDAVServer();
+        await server.init();
 
-    // Load SSL certificates
-    const certPath = path.join(__dirname, '../certs/wordserver.local.crt');
-    const keyPath = path.join(__dirname, '../certs/wordserver.local.key');
+        const sslOptions = loadSSLCertificates();
+        logger.success('SSL certificates loaded');
 
-    if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
-        console.error('❌ mkcert certificates not found!');
+        const httpsServer = https.createServer(sslOptions, (req, res) => {
+            server.handleRequest(req, res);
+        });
+
+        httpsServer.listen(config.WEBDAV_PORT, () => {
+            logger.success(`WebDAV Server running on https://wordserver.local:${config.WEBDAV_PORT}`);
+            logger.info('Features: PROPFIND, GET, PUT, DELETE, LOCK/UNLOCK');
+        });
+
+        httpsServer.on('error', (error) => {
+            logger.error('WebDAV server error:', error.message);
+        });
+    } catch (error) {
+        logger.error('Failed to start WebDAV server:', error.message);
         process.exit(1);
     }
-
-    const sslOptions = {
-        cert: fs.readFileSync(certPath),
-        key: fs.readFileSync(keyPath)
-    };
-
-    const httpsServer = https.createServer(sslOptions, (req, res) => {
-        server.handleRequest(req, res);
-    });
-
-    httpsServer.listen(3001, () => {
-        console.log('');
-        console.log('============================================');
-        console.log('✅ Simple WebDAV Server Ready!');
-        console.log('============================================');
-        console.log('🔗 URL: https://wordserver.local:3001/');
-        console.log('💾 Storage: MongoDB GridFS');
-        console.log('🔒 HTTPS: mkcert (trusted)');
-        console.log('');
-        console.log('📖 Supported Methods:');
-        console.log('   ✅ OPTIONS - Discovery');
-        console.log('   ✅ PROPFIND - List/Info');
-        console.log('   ✅ GET - Download');
-        console.log('   ✅ PUT - Upload/Update');
-        console.log('   ✅ DELETE - Remove');
-        console.log('   ✅ LOCK/UNLOCK - Locking');
-        console.log('');
-        console.log('🎯 Usage:');
-        console.log('   ms-word:ofe|u|https://wordserver.local:3001/filename.docx');
-        console.log('============================================');
-    });
-
-    httpsServer.on('error', (error) => {
-        console.error('❌ Server error:', error);
-    });
 }
 
 if (require.main === module) {
-    startServer().catch(error => {
-        console.error('❌ Failed to start server:', error);
-        process.exit(1);
-    });
+    startServer();
 }
 
 module.exports = { startServer };

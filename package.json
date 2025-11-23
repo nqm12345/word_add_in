@@ -4,8 +4,11 @@
   "description": "Word editor with ms-word:ofe|u| protocol and MongoDB storage",
   "main": "server/server-mongodb.js",
   "scripts": {
-    "start": "concurrently \"node server/server-mongodb.js\" \"node server/webdav-simple.js\"",
-    "dev": "concurrently \"nodemon server/server-mongodb.js\" \"nodemon server/webdav-simple.js\""
+    "start": "concurrently \"node server/server-mongodb.js\" \"node server/webdav-simple.js\" \"npm run client\"",
+    "dev": "concurrently \"nodemon server/server-mongodb.js\" \"nodemon server/webdav-simple.js\" \"npm run client\"",
+    "server": "concurrently \"node server/server-mongodb.js\" \"node server/webdav-simple.js\"",
+    "client": "cd client && npm run dev",
+    "install-all": "npm install && cd client && npm install"
   },
   "dependencies": {
     "cors": "^2.8.5",

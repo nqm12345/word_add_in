@@ -15,8 +15,8 @@ Hệ thống quản lý và chỉnh sửa tài liệu Word với khả năng aut
 
 ```
 ┌─────────────────────────────────────┐
-│  Dashboard (Browser)                │
-│  Port 3000 - Web UI                 │
+│  React App (Vite)                   │
+│  Port 5173 - Web UI                 │
 │  - Upload files                     │
 │  - Download files                   │
 │  - Delete files                     │
@@ -28,7 +28,7 @@ Hệ thống quản lý và chỉnh sửa tài liệu Word với khả năng aut
              ↓                 ↓                  ↓
 ┌─────────────────────┐ ┌──────────────┐ ┌──────────────┐
 │  API Server         │ │ WebDAV Server│ │ Word Desktop │
-│  Port 3000          │ │ Port 3001    │ │              │
+│  Port 3000 (HTTPS)  │ │ Port 3001    │ │              │
 │  - List files       │ │ - PROPFIND   │ │ - Edit docs  │
 │  - Upload           │ │ - GET        │ │ - Ctrl+S     │
 │  - Download         │ │ - PUT        │ │ - Auto-save  │
@@ -46,77 +46,76 @@ Hệ thống quản lý và chỉnh sửa tài liệu Word với khả năng aut
 
 ## 📋 Yêu Cầu
 
-- Node.js 16+
+- Node.js 18+
 - MongoDB 4.4+
 - mkcert (cho HTTPS certificates)
 - Windows với Word Desktop
 
+## 🛠️ Tech Stack
+
+**Frontend:**
+- React 18
+- Vite
+- Tailwind CSS
+- Axios
+- Lucide React Icons
+
+**Backend:**
+- Node.js + Express
+- Custom WebDAV Server
+- MongoDB GridFS
+- HTTPS (mkcert)
+
 ## 🚀 Cài Đặt
 
-### 1. Clone & Install
+### ⚡ Quick Start (Người đã biết)
 
 ```bash
-git clone <repo>
-cd datv_word
-npm install
+git clone https://github.com/nqm12345/word_add_in.git
+cd word_add_in
+npm run install-all
+# Setup SSL, hosts, Word → Xem QUICK_START.md
+npm start
 ```
 
-### 2. Setup MongoDB
+### 📖 Hướng Dẫn Chi Tiết (Người mới)
 
-```bash
-# Start MongoDB
-mongod --dbpath <your-data-path>
-```
+**Xem file:** `SETUP_GUIDE.md` - Hướng dẫn đầy đủ từng bước
 
-### 3. Setup HTTPS Certificates
+**Files hướng dẫn:**
+- 📘 **SETUP_GUIDE.md** - Setup chi tiết đầy đủ (45 phút)
+- ⚡ **QUICK_START.md** - Hướng dẫn nhanh (5 phút)
+- 📋 **REQUIREMENTS.txt** - Yêu cầu hệ thống
+- 🔧 **ADD_TRUSTED_LOCATION.ps1** - Script tự động setup Word
 
-```bash
-# Install mkcert
-choco install mkcert
+### Tóm tắt Setup:
 
-# Generate certificates
-cd datv_word
-mkdir certs
-cd certs
-mkcert wordserver.local
-rename wordserver.local.pem wordserver.local.crt
-rename wordserver.local-key.pem wordserver.local.key
-```
+1. **Cài phần mềm:** Node.js, MongoDB, mkcert
+2. **Clone & install:** `npm run install-all`
+3. **SSL certificates:** `mkcert wordserver.local`
+4. **Hosts file:** Add `127.0.0.1 wordserver.local`
+5. **Word setup:** Chạy `ADD_TRUSTED_LOCATION.ps1`
+6. **Start:** `npm start`
 
-### 4. Setup Hosts File
-
-Thêm vào `C:\Windows\System32\drivers\etc\hosts`:
-
-```
-127.0.0.1 wordserver.local
-```
-
-### 5. Setup Trusted Location (Quan trọng!)
-
-**Chạy script PowerShell:**
-
-```powershell
-powershell -ExecutionPolicy Bypass -File "ADD_TRUSTED_LOCATION.ps1"
-```
-
-**Hoặc restart máy để apply registry changes.**
+**→ Chi tiết xem `SETUP_GUIDE.md`**
 
 ## 🎯 Sử Dụng
 
-### Start Servers
+### Start All Servers
 
 ```bash
 npm start
 ```
 
-Sẽ chạy 2 servers:
+Sẽ chạy 3 servers:
 - API Server: `https://wordserver.local:3000`
 - WebDAV Server: `https://wordserver.local:3001`
+- React App: `http://localhost:5173`
 
-### Mở Dashboard
+### Mở React App
 
 ```
-https://wordserver.local:3000/dashboard.html
+http://localhost:5173
 ```
 
 ### Workflow
