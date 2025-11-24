@@ -250,21 +250,10 @@ async function autoSetupWord() {
 
         ps.on('close', (code) => {
           if (code === 0) {
-            if (mainWindow) {
-              mainWindow.webContents.send('update-status', {
-                step: 'refreshing',
-                message: 'Đang refresh Explorer...'
-              });
-            }
-
-            // Refresh Explorer to apply changes
-            exec('taskkill /F /IM explorer.exe && start explorer.exe', () => {
-              setTimeout(() => {
-                resolve({ 
-                  success: true, 
-                  message: 'Setup Word Desktop hoàn tất!\n\n✅ Cấu hình hosts file (wordserver.local)\n✅ Tắt Protected View\n✅ Enable Network Locations\n✅ Thêm Trusted Location\n\nBạn có thể mở Word và sử dụng ngay!' 
-                });
-              }, 2000);
+            // Script completed successfully - no need to refresh Explorer
+            resolve({ 
+              success: true, 
+              message: 'Setup Word Desktop hoàn tất!\n\n✅ Cấu hình hosts file (wordserver.local)\n✅ Tắt Protected View\n✅ Enable Network Locations\n✅ Thêm Trusted Location\n\n⚠️ VUI LÒNG RESTART MÁY để áp dụng thay đổi!' 
             });
           } else {
             resolve({ 
