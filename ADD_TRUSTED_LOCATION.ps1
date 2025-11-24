@@ -1,14 +1,37 @@
 # ============================================
 # ADD TRUSTED LOCATION FOR WORD
+# COMPREHENSIVE SETUP - ALL FIXES INCLUDED
 # ============================================
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "  ADD TRUSTED LOCATION - AUTO-SAVE FIX" -ForegroundColor Cyan
+Write-Host "  WORD DESKTOP AUTO-SETUP (ALL FIXES)" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
-Write-Host "[1/5] Disabling Protected View..." -ForegroundColor Yellow
+Write-Host "[1/6] Installing SSL Certificate..." -ForegroundColor Yellow
+
+# Install SSL Certificate to Trusted Root (Fix for SSL warnings)
+$scriptDir = Split-Path -Parent $PSScriptRoot
+$certPath = Join-Path $scriptDir "certs\wordserver.local.crt"
+
+if (Test-Path $certPath) {
+    try {
+        # Import to Trusted Root Certification Authorities
+        $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certPath)
+        $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root", "CurrentUser")
+        $store.Open("ReadWrite")
+        $store.Add($cert)
+        $store.Close()
+        Write-Host "    OK - SSL Certificate installed to Trusted Root" -ForegroundColor Green
+    } catch {
+        Write-Host "    WARNING - Certificate installation failed (may already exist)" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "    WARNING - Certificate file not found at: $certPath" -ForegroundColor Yellow
+}
+
+Write-Host "[2/6] Disabling Protected View..." -ForegroundColor Yellow
 
 # Disable Protected View
 $protectedViewPath = "HKCU:\Software\Microsoft\Office\16.0\Word\Security\ProtectedView"
@@ -22,7 +45,7 @@ Set-ItemProperty -Path $protectedViewPath -Name "DisableAttachementsInPV" -Value
 
 Write-Host "    OK - Protected View disabled" -ForegroundColor Green
 
-Write-Host "[2/5] Enabling network locations..." -ForegroundColor Yellow
+Write-Host "[3/6] Enabling network locations..." -ForegroundColor Yellow
 
 # Enable network locations
 $trustedLocationsPath = "HKCU:\Software\Microsoft\Office\16.0\Word\Security\Trusted Locations"
@@ -34,7 +57,7 @@ Set-ItemProperty -Path $trustedLocationsPath -Name "AllowNetworkLocations" -Valu
 
 Write-Host "    OK - Network locations enabled" -ForegroundColor Green
 
-Write-Host "[3/5] Adding Trusted Locations..." -ForegroundColor Yellow
+Write-Host "[4/6] Adding Trusted Locations..." -ForegroundColor Yellow
 
 # Add Trusted Location for API (port 3000)
 $location99Path = "HKCU:\Software\Microsoft\Office\16.0\Word\Security\Trusted Locations\Location99"
@@ -70,7 +93,7 @@ Set-ItemProperty -Path $webClientPath -Name "UseOnlineContent" -Value 1 -Type DW
 
 Write-Host "    OK - Web folders enabled" -ForegroundColor Green
 
-Write-Host "[4/5] Killing Word processes..." -ForegroundColor Yellow
+Write-Host "[5/6] Killing Word processes..." -ForegroundColor Yellow
 
 # Kill all Word processes
 $wordProcesses = Get-Process -Name "WINWORD" -ErrorAction SilentlyContinue
@@ -81,7 +104,7 @@ if ($wordProcesses) {
     Write-Host "    OK - No Word running" -ForegroundColor Green
 }
 
-Write-Host "[5/5] Verifying..." -ForegroundColor Yellow
+Write-Host "[6/6] Verifying..." -ForegroundColor Yellow
 
 # Verify
 $location = Get-ItemProperty -Path $location99Path -ErrorAction SilentlyContinue
@@ -95,18 +118,29 @@ Write-Host "  Network: $allowNetwork" -ForegroundColor White
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Green
-Write-Host "  DONE!" -ForegroundColor Green
+Write-Host "  SETUP COMPLETED!" -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "TEST NOW:" -ForegroundColor Cyan
-Write-Host "  1. Open: https://wordserver.local:3000/dashboard.html" -ForegroundColor White
-Write-Host "  2. Click Edit button" -ForegroundColor White
-Write-Host "  3. Word opens WITHOUT read-only warning!" -ForegroundColor White
-Write-Host "  4. Edit -> Ctrl+S -> Auto-save to server!" -ForegroundColor White
+Write-Host "What was configured:" -ForegroundColor Cyan
+Write-Host "  [1/6] SSL Certificate -> Trusted Root (no more SSL warnings)" -ForegroundColor Green
+Write-Host "  [2/6] Protected View -> Disabled" -ForegroundColor Green
+Write-Host "  [3/6] Network Locations -> Enabled" -ForegroundColor Green
+Write-Host "  [4/6] Trusted Locations -> Added (3000 + 3001)" -ForegroundColor Green
+Write-Host "  [5/6] Word Processes -> Closed" -ForegroundColor Green
+Write-Host "  [6/6] Web Folders -> Enabled" -ForegroundColor Green
 Write-Host ""
-Write-Host "IF STILL NOT WORKING:" -ForegroundColor Yellow
-Write-Host "  -> RESTART COMPUTER" -ForegroundColor Yellow
-Write-Host "  -> Then test again" -ForegroundColor Yellow
+Write-Host "IMPORTANT - NEXT STEPS:" -ForegroundColor Yellow
+Write-Host "  1. RESTART YOUR COMPUTER (Required!)" -ForegroundColor Yellow
+Write-Host "  2. After restart, open browser:" -ForegroundColor White
+Write-Host "     http://localhost:5173" -ForegroundColor White
+Write-Host "  3. Upload a Word file" -ForegroundColor White
+Write-Host "  4. Click Edit button" -ForegroundColor White
+Write-Host "  5. Word opens -> Edit -> Ctrl+S -> Auto-save!" -ForegroundColor White
+Write-Host ""
+Write-Host "Troubleshooting:" -ForegroundColor Cyan
+Write-Host "  - If browser can't upload: Accept SSL certificates" -ForegroundColor White
+Write-Host "    https://wordserver.local:3000 (click Advanced -> Proceed)" -ForegroundColor White
+Write-Host "    https://wordserver.local:3001 (click Advanced -> Proceed)" -ForegroundColor White
 Write-Host ""
 
 # pause - Removed: Causes Electron app to hang waiting for script to finish
