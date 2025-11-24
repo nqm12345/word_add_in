@@ -1,0 +1,43 @@
+{
+  "name": "word-setup-tool",
+  "version": "1.0.0",
+  "description": "Auto setup Microsoft Word Desktop for Word Editor",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64"
+  },
+  "author": "Word Editor Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.wordeditor.setup",
+    "productName": "Word Setup Tool",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../ADD_TRUSTED_LOCATION.ps1",
+        "to": "ADD_TRUSTED_LOCATION.ps1"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "shortcutName": "Word Setup Tool"
+    }
+  }
+}

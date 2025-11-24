@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .app-container {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: #181825;
+      border-right: 1px solid #313244;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 0;
+    }
+
+    .logo {
+      padding: 0 20px 20px 20px;
+      border-bottom: 1px solid #313244;
+      margin-bottom: 20px;
+    }
+
+    .logo h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #cdd6f4;
+    }
+
+    .nav-item {
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #9399b2;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-item:hover {
+      background: #313244;
+      color: #cdd6f4;
+    }
+
+    .nav-item.active {
+      background: #313244;
+      color: #89b4fa;
+      border-left: 3px solid #89b4fa;
+    }
+
+    .nav-icon {
+      width: 20px;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      background: #1e1e2e;
+    }
+    
+    .main-content::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .main-content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .main-content::-webkit-scrollbar-thumb {
+      background: #313244;
+      border-radius: 4px;
+    }
+    
+    .main-content::-webkit-scrollbar-thumb:hover {
+      background: #45475a;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #89b4fa 0%, #cba6f7 100%);
+      padding: 40px;
+      border-radius: 0 0 16px 16px;
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .content {
+      padding: 0 40px 40px 40px;
+    }
+
+    .card {
+      background: #181825;
+      border: 1px solid #313244;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #cdd6f4;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-badge.checking {
+      background: rgba(137, 180, 250, 0.2);
+      color: #89b4fa;
+    }
+
+    .status-badge.running {
+      background: rgba(166, 227, 161, 0.2);
+      color: #a6e3a1;
+    }
+
+    .status-badge.complete {
+      background: rgba(166, 227, 161, 0.2);
+      color: #a6e3a1;
+    }
+
+    .status-badge.error {
+      background: rgba(243, 139, 168, 0.2);
+      color: #f38ba8;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #313244;
+      border-top-color: #89b4fa;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .progress-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #1e1e2e;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .progress-item.active {
+      border-color: #89b4fa;
+      background: rgba(137, 180, 250, 0.05);
+    }
+
+    .progress-item.done {
+      opacity: 0.5;
+    }
+
+    .progress-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #313244;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #6c7086;
+    }
+
+    .progress-item.active .progress-icon {
+      background: #89b4fa;
+      color: #fff;
+    }
+
+    .progress-item.done .progress-icon {
+      background: #a6e3a1;
+      color: #1e1e2e;
+    }
+
+    .progress-text {
+      flex: 1;
+      font-size: 14px;
+      color: #bac2de;
+    }
+
+    .message-box {
+      background: rgba(137, 180, 250, 0.1);
+      border: 1px solid #89b4fa;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .message-box.success {
+      background: rgba(166, 227, 161, 0.1);
+      border-color: #a6e3a1;
+    }
+
+    .message-box.error {
+      background: rgba(243, 139, 168, 0.1);
+      border-color: #f38ba8;
+    }
+
+    .message-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #cdd6f4;
+      white-space: pre-line;
+    }
+
+    .button {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: none;
+    }
+
+    .button-primary {
+      background: #89b4fa;
+      color: #1e1e2e;
+    }
+
+    .button-primary:hover {
+      background: #74c7ec;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="logo">
+        <h2>⚙ Word Setup</h2>
+      </div>
+      <div class="nav-item active">
+        <span class="nav-icon">●</span>
+        <span>Setup Progress</span>
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">◐</span>
+        <span>Configuration</span>
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">◑</span>
+        <span>About</span>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="header">
+        <h1>Microsoft Word Desktop Setup</h1>
+        <p>Configuring Word for optimal performance with Word Editor</p>
+      </div>
+
+      <div class="content">
+        <!-- Status Card -->
+        <div class="card">
+          <div class="card-title">
+            <span>Status</span>
+            <span class="status-badge checking" id="statusBadge">
+              <span class="spinner"></span>
+              <span id="statusText">Initializing</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Progress Card -->
+        <div class="card">
+          <div class="card-title">Setup Progress</div>
+          <div class="progress-list">
+            <div class="progress-item" id="step-checking">
+              <div class="progress-icon">1</div>
+              <div class="progress-text">Checking configuration</div>
+            </div>
+            <div class="progress-item" id="step-setup-hosts">
+              <div class="progress-icon">2</div>
+              <div class="progress-text">Setup hosts file (wordserver.local)</div>
+            </div>
+            <div class="progress-item" id="step-closing-word">
+              <div class="progress-icon">3</div>
+              <div class="progress-text">Closing Microsoft Word</div>
+            </div>
+            <div class="progress-item" id="step-updating-registry">
+              <div class="progress-icon">4</div>
+              <div class="progress-text">Updating registry settings</div>
+            </div>
+            <div class="progress-item" id="step-refreshing">
+              <div class="progress-icon">5</div>
+              <div class="progress-text">Refreshing system</div>
+            </div>
+          </div>
+
+          <div class="message-box" id="messageBox">
+            <div class="message-text" id="messageText"></div>
+          </div>
+
+          <button class="button button-primary" id="closeBtn" onclick="window.close()">
+            Close Application
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const steps = ['checking', 'setup-hosts', 'closing-word', 'updating-registry', 'refreshing'];
+    let currentStep = '';
+
+    window.setupAPI.onUpdateStatus((data) => {
+      // Update status badge
+      const statusBadge = document.getElementById('statusBadge');
+      const statusText = document.getElementById('statusText');
+      statusText.textContent = data.message;
+      statusBadge.className = 'status-badge running';
+      
+      // Update progress steps
+      if (currentStep) {
+        const prevStep = document.getElementById('step-' + currentStep);
+        if (prevStep) {
+          prevStep.classList.remove('active');
+          prevStep.classList.add('done');
+          // Change icon to checkmark
+          const icon = prevStep.querySelector('.progress-icon');
+          if (icon) icon.textContent = '✓';
+        }
+      }
+
+      currentStep = data.step;
+      const activeStep = document.getElementById('step-' + data.step);
+      if (activeStep) {
+        activeStep.classList.add('active');
+      }
+    });
+
+    window.setupAPI.onSetupComplete((data) => {
+      // Mark last step as done
+      if (currentStep) {
+        const prevStep = document.getElementById('step-' + currentStep);
+        if (prevStep) {
+          prevStep.classList.remove('active');
+          prevStep.classList.add('done');
+          // Change icon to checkmark
+          const icon = prevStep.querySelector('.progress-icon');
+          if (icon) icon.textContent = '✓';
+        }
+      }
+
+      // Update status badge
+      const statusBadge = document.getElementById('statusBadge');
+      const statusText = document.getElementById('statusText');
+      statusBadge.className = 'status-badge ' + (data.success ? 'complete' : 'error');
+      statusText.textContent = data.success ? 'Complete' : 'Failed';
+      statusBadge.querySelector('.spinner')?.remove();
+
+      // Show message
+      const messageBox = document.getElementById('messageBox');
+      const messageText = document.getElementById('messageText');
+      messageText.textContent = data.message;
+      messageBox.className = 'message-box ' + (data.success ? 'success' : 'error');
+      messageBox.style.display = 'block';
+      
+      // Show close button
+      document.getElementById('closeBtn').style.display = 'inline-block';
+    });
+  </script>
+</body>
+</html>

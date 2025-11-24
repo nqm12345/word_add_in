@@ -1,0 +1,56 @@
+================================================================================
+                    WORD SETUP TOOL
+                Công cụ tự động setup Word Desktop
+================================================================================
+
+MỤC ĐÍCH:
+────────────────────────────────────────────────────────────────────────────
+App này tự động cấu hình Microsoft Word để hoạt động với Word Editor.
+
+Bạn KHÔNG cần làm gì thủ công!
+
+
+CÁCH SỬ DỤNG:
+────────────────────────────────────────────────────────────────────────────
+1. Double-click file: "Word Setup Tool Setup.exe"
+
+2. App sẽ tự động:
+   ✓ Kiểm tra Word đã được setup chưa
+   ✓ Đóng tất cả Word processes
+   ✓ Cập nhật Registry
+   ✓ Setup Trusted Location
+   ✓ Tắt Protected View
+   
+3. Hiện thông báo "Setup Hoàn Tất!"
+
+4. App tự động đóng sau 5 giây
+
+5. DONE!
+
+
+APP TỰ ĐỘNG SETUP:
+────────────────────────────────────────────────────────────────────────────
+✅ Tắt Protected View
+✅ Enable Network Locations
+✅ Thêm Trusted Location: https://wordserver.local:3000/
+
+
+SAU KHI CHẠY APP:
+────────────────────────────────────────────────────────────────────────────
+→ Microsoft Word đã được cấu hình
+→ Bạn có thể mở Word và sử dụng Word Editor ngay
+→ Không cần làm thêm gì!
+
+
+LƯU Ý:
+────────────────────────────────────────────────────────────────────────────
+⚠️ Nếu app báo lỗi:
+   - Chạy app với quyền Administrator (Right-click → Run as Administrator)
+   - Đảm bảo Microsoft Word đã được cài đặt
+
+
+HỖ TRỢ:
+────────────────────────────────────────────────────────────────────────────
+Nếu có vấn đề, liên hệ support team.
+
+================================================================================
