@@ -59,13 +59,13 @@ Write-Host "    OK - Protected View disabled" -ForegroundColor Green
 
 Write-Host "[3/6] Enabling network locations..." -ForegroundColor Yellow
 
-# Enable network locations
-$trustedLocationsPath = "HKCU:\Software\Microsoft\Office\16.0\Word\Security\Trusted Locations"
-if (-not (Test-Path $trustedLocationsPath)) {
-    New-Item -Path $trustedLocationsPath -Force | Out-Null
+# Enable network locations (must be in Security, not Trusted Locations)
+$securityPath = "HKCU:\Software\Microsoft\Office\16.0\Word\Security"
+if (-not (Test-Path $securityPath)) {
+    New-Item -Path $securityPath -Force | Out-Null
 }
 
-Set-ItemProperty -Path $trustedLocationsPath -Name "AllowNetworkLocations" -Value 1 -Type DWord -Force
+Set-ItemProperty -Path $securityPath -Name "AllowNetworkLocations" -Value 1 -Type DWord -Force
 
 Write-Host "    OK - Network locations enabled" -ForegroundColor Green
 
@@ -120,7 +120,7 @@ Write-Host "[6/6] Verifying..." -ForegroundColor Yellow
 
 # Verify
 $location = Get-ItemProperty -Path $location99Path -ErrorAction SilentlyContinue
-$allowNetwork = (Get-ItemProperty -Path $trustedLocationsPath -Name "AllowNetworkLocations" -ErrorAction SilentlyContinue).AllowNetworkLocations
+$allowNetwork = (Get-ItemProperty -Path $securityPath -Name "AllowNetworkLocations" -ErrorAction SilentlyContinue).AllowNetworkLocations
 
 Write-Host ""
 Write-Host "Settings:" -ForegroundColor Cyan
