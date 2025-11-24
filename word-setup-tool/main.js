@@ -317,28 +317,8 @@ app.whenReady().then(async () => {
         message: 'Word Desktop đã được cấu hình!\n\n✅ Hosts file OK\n✅ Word Registry OK\n\nKhông cần setup lại.\n\nBạn có thể đóng cửa sổ này.'
       });
     } else {
-      // Need to setup - Run mkcert first, then Word setup
+      // Need to setup - Run Word setup only (mkcert is manual)
       
-      // Step 1: Setup mkcert
-      mainWindow.webContents.send('update-status', {
-        step: 'mkcert',
-        message: '🔐 Đang setup SSL certificates...'
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const mkcertResult = await setupMkcert();
-
-      if (!mkcertResult.success) {
-        mainWindow.webContents.send('setup-complete', {
-          success: false,
-          alreadyConfigured: false,
-          message: '❌ Lỗi setup mkcert:\n\n' + mkcertResult.message
-        });
-        return;
-      }
-
-      // Step 2: Setup Word Desktop
       mainWindow.webContents.send('update-status', {
         step: 'word',
         message: '⚙️ Đang setup Word Desktop...'
@@ -353,15 +333,17 @@ app.whenReady().then(async () => {
         alreadyConfigured: false,
         message: wordResult.success 
           ? '✅ SETUP HOÀN TẤT!\n\n' +
-            '🔐 SSL Certificates: OK\n' +
             '📝 Hosts file: OK\n' +
             '⚙️ Word Registry: OK\n\n' +
-            '⚠️ QUAN TRỌNG:\n' +
-            '1. RESTART COMPUTER\n' +
-            '2. Restart servers (API + WebDAV)\n' +
-            '3. Mở browser - KHÔNG CẦN ACCEPT SSL nữa!\n' +
-            '4. Upload & Edit - Tất cả hoạt động!\n\n' +
-            '🎉 Browser sẽ TỰ ĐỘNG trust SSL!'
+            '⚠️ BƯỚC TIẾP THEO (BẮT BUỘC):\n\n' +
+            '1. MỞ POWERSHELL AS ADMIN\n' +
+            '2. CHẠY CÁC LỆNH SAU:\n\n' +
+            '   cd C:\\Users\\Admin\\Desktop\\word_add_in\\word-setup-tool\n' +
+            '   .\\mkcert.exe -install\n' +
+            '   .\\mkcert.exe -cert-file ..\\certs\\wordserver.local.crt -key-file ..\\certs\\wordserver.local.key wordserver.local localhost 127.0.0.1 ::1\n\n' +
+            '3. RESTART COMPUTER\n' +
+            '4. Chạy servers & test\n\n' +
+            '📄 Chi tiết: HUONG_DAN_CAI_DAT_SSL.md'
           : '❌ Lỗi setup:\n\n' + wordResult.message
       });
     }
