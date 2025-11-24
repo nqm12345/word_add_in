@@ -87,4 +87,4 @@ Write-Host "  -> RESTART COMPUTER" -ForegroundColor Yellow
 Write-Host "  -> Then test again" -ForegroundColor Yellow
 Write-Host ""
 
-pause
+# pause - Removed: Causes Electron app to hang waiting for script to finish
