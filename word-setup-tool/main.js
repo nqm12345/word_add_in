@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const { spawn, exec, execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -68,6 +68,107 @@ function checkWordSetup() {
   } catch (error) {
     return false; // Not configured
   }
+}
+
+// Auto setup mkcert and generate certificates
+async function setupMkcert() {
+  return new Promise((resolve) => {
+    try {
+      const isDev = !app.isPackaged;
+      const mkcertPath = isDev 
+        ? path.join(__dirname, 'mkcert.exe')
+        : path.join(process.resourcesPath, 'mkcert.exe');
+      
+      if (!fs.existsSync(mkcertPath)) {
+        resolve({ 
+          success: false, 
+          message: 'Không tìm thấy mkcert.exe' 
+        });
+        return;
+      }
+
+      const certsDir = isDev
+        ? path.join(__dirname, '..', 'certs')
+        : path.join(process.resourcesPath, 'certs');
+
+      // Send status update
+      if (mainWindow) {
+        mainWindow.webContents.send('update-status', {
+          step: 'mkcert-install',
+          message: 'Đang cài đặt mkcert CA...'
+        });
+      }
+
+      // Step 1: Install mkcert CA
+      exec(`"${mkcertPath}" -install`, (error, stdout, stderr) => {
+        if (error) {
+          resolve({ success: false, message: 'Lỗi cài đặt mkcert CA: ' + error.message });
+          return;
+        }
+
+        // Step 2: Generate certificates
+        if (mainWindow) {
+          mainWindow.webContents.send('update-status', {
+            step: 'generate-certs',
+            message: 'Đang tạo SSL certificates...'
+          });
+        }
+
+        // Delete old certificates
+        const oldCrt = path.join(certsDir, 'wordserver.local.crt');
+        const oldKey = path.join(certsDir, 'wordserver.local.key');
+        
+        if (fs.existsSync(oldCrt)) fs.unlinkSync(oldCrt);
+        if (fs.existsSync(oldKey)) fs.unlinkSync(oldKey);
+
+        // Generate new certificates
+        const generateCmd = `cd /d "${certsDir}" && "${mkcertPath}" wordserver.local localhost 127.0.0.1 ::1`;
+        
+        exec(generateCmd, (error, stdout, stderr) => {
+          if (error) {
+            resolve({ success: false, message: 'Lỗi tạo certificates: ' + error.message });
+            return;
+          }
+
+          // Rename files
+          try {
+            const files = fs.readdirSync(certsDir);
+            const pemFiles = files.filter(f => f.endsWith('.pem'));
+            
+            pemFiles.forEach(file => {
+              const fullPath = path.join(certsDir, file);
+              let newName;
+              
+              if (file.includes('-key')) {
+                newName = 'wordserver.local.key';
+              } else {
+                newName = 'wordserver.local.crt';
+              }
+              
+              const newPath = path.join(certsDir, newName);
+              fs.renameSync(fullPath, newPath);
+            });
+
+            resolve({ 
+              success: true, 
+              message: 'SSL Certificates đã được tạo và cài đặt!\n\n' +
+                       '✓ mkcert CA installed\n' +
+                       '✓ Certificates generated\n' +
+                       '✓ Browser sẽ tự động trust (không cần accept SSL)!'
+            });
+          } catch (err) {
+            resolve({ success: false, message: 'Lỗi rename files: ' + err.message });
+          }
+        });
+      });
+
+    } catch (error) {
+      resolve({ 
+        success: false, 
+        message: 'Lỗi setup mkcert: ' + error.message 
+      });
+    }
+  });
 }
 
 // Auto setup Word Desktop
@@ -174,6 +275,15 @@ async function autoSetupWord() {
   });
 }
 
+// IPC Handlers
+ipcMain.handle('setup-mkcert', async () => {
+  return await setupMkcert();
+});
+
+ipcMain.handle('setup-word', async () => {
+  return await autoSetupWord();
+});
+
 // Main logic
 app.whenReady().then(async () => {
   createWindow();
@@ -199,20 +309,52 @@ app.whenReady().then(async () => {
         message: 'Word Desktop đã được cấu hình!\n\n✅ Hosts file OK\n✅ Word Registry OK\n\nKhông cần setup lại.\n\nBạn có thể đóng cửa sổ này.'
       });
     } else {
-      // Need to setup
+      // Need to setup - Run mkcert first, then Word setup
+      
+      // Step 1: Setup mkcert
       mainWindow.webContents.send('update-status', {
-        step: 'starting',
-        message: 'Bắt đầu setup Word Desktop...'
+        step: 'mkcert',
+        message: '🔐 Đang setup SSL certificates...'
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const mkcertResult = await setupMkcert();
+
+      if (!mkcertResult.success) {
+        mainWindow.webContents.send('setup-complete', {
+          success: false,
+          alreadyConfigured: false,
+          message: '❌ Lỗi setup mkcert:\n\n' + mkcertResult.message
+        });
+        return;
+      }
+
+      // Step 2: Setup Word Desktop
+      mainWindow.webContents.send('update-status', {
+        step: 'word',
+        message: '⚙️ Đang setup Word Desktop...'
       });
 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const result = await autoSetupWord();
+      const wordResult = await autoSetupWord();
 
       mainWindow.webContents.send('setup-complete', {
-        success: result.success,
+        success: wordResult.success,
         alreadyConfigured: false,
-        message: result.message
+        message: wordResult.success 
+          ? '✅ SETUP HOÀN TẤT!\n\n' +
+            '🔐 SSL Certificates: OK\n' +
+            '📝 Hosts file: OK\n' +
+            '⚙️ Word Registry: OK\n\n' +
+            '⚠️ QUAN TRỌNG:\n' +
+            '1. RESTART COMPUTER\n' +
+            '2. Restart servers (API + WebDAV)\n' +
+            '3. Mở browser - KHÔNG CẦN ACCEPT SSL nữa!\n' +
+            '4. Upload & Edit - Tất cả hoạt động!\n\n' +
+            '🎉 Browser sẽ TỰ ĐỘNG trust SSL!'
+          : '❌ Lỗi setup:\n\n' + wordResult.message
       });
     }
   });

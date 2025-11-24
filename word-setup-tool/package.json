@@ -29,6 +29,10 @@
         "to": "ADD_TRUSTED_LOCATION.ps1"
       },
       {
+        "from": "mkcert.exe",
+        "to": "mkcert.exe"
+      },
+      {
         "from": "../certs",
         "to": "certs"
       }
