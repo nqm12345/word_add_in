@@ -1,15 +1,15 @@
-# Word Editor with WebDAV & MongoDB
+# Word Editor - Edit Word files directly on server 📄
 
-Hệ thống quản lý và chỉnh sửa tài liệu Word với khả năng auto-save trực tiếp từ Word Desktop về server.
+Hệ thống cho phép upload, download và chỉnh sửa file Word trực tiếp từ trình duyệt web, sử dụng Microsoft Word Desktop để edit 📊.
 
-## ✨ Tính Năng
+## ✨ Features
 
-- ✅ **WebDAV Server** - Full implementation cho Word Desktop
-- ✅ **MongoDB GridFS** - Lưu trữ files trong database
-- ✅ **Auto-Save** - Ctrl+S trong Word tự động lưu về server
-- ✅ **Dashboard** - Web UI quản lý files
-- ✅ **HTTPS** - Secured với mkcert certificates
-- ✅ **ms-word:ofe|u|** - Microsoft Office protocol
+- 📤 Upload Word files (.docx) lên server
+- 📥 Download files về máy
+- ✏️ Edit files trực tiếp với Word Desktop (qua WebDAV)
+- 💾 Auto-save về server khi Ctrl+S (không save local)
+- 🔒 SSL/HTTPS được cấu hình tự động
+- 🚀 Không cần OnlyOffice/LibreOffice - dùng Word Desktop có sẵn
 
 ## 🏗️ Kiến Trúc
 
@@ -80,24 +80,24 @@ npm start
 
 ### 📖 Hướng Dẫn Chi Tiết (Người mới)
 
-**Xem file:** `SETUP_GUIDE.md` - Hướng dẫn đầy đủ từng bước
+**⭐ Xem file:** `HUONG_DAN_CAI_DAT_KHACH_HANG.md` - Hướng dẫn đầy đủ từng bước
 
 **Files hướng dẫn:**
-- 📘 **SETUP_GUIDE.md** - Setup chi tiết đầy đủ (45 phút)
-- ⚡ **QUICK_START.md** - Hướng dẫn nhanh (5 phút)
-- 📋 **REQUIREMENTS.txt** - Yêu cầu hệ thống
-- 🔧 **ADD_TRUSTED_LOCATION.ps1** - Script tự động setup Word
+- 📘 **HUONG_DAN_CAI_DAT_KHACH_HANG.md** - Setup chi tiết đầy đủ (30 phút)
+- 🔍 **CHECK_SETUP.ps1** - Script kiểm tra setup
+- ⚡ **CHECK_SIMPLE.bat** - Script kiểm tra đơn giản (double-click)
+- 🔧 **word-setup-tool/** - App tự động setup Word Registry
 
 ### Tóm tắt Setup:
 
-1. **Cài phần mềm:** Node.js, MongoDB, mkcert
-2. **Clone & install:** `npm run install-all`
-3. **SSL certificates:** `mkcert wordserver.local`
-4. **Hosts file:** Add `127.0.0.1 wordserver.local`
-5. **Word setup:** Chạy `ADD_TRUSTED_LOCATION.ps1`
-6. **Start:** `npm start`
+1. **Cài phần mềm:** MongoDB, Node.js, Git, Word Desktop
+2. **Clone & install:** `git clone` → `npm install` (server, client, word-setup-tool)
+3. **Setup:** Chạy Word Setup Tool (as Admin)
+4. **SSL certificates:** `mkcert -install` + generate certs (THỦ CÔNG)
+5. **Restart máy:** Bắt buộc
+6. **Start servers:** API + WebDAV + Client
 
-**→ Chi tiết xem `SETUP_GUIDE.md`**
+**→ Chi tiết xem `HUONG_DAN_CAI_DAT_KHACH_HANG.md`**
 
 ## 🎯 Sử Dụng
 
