@@ -20,12 +20,17 @@
       "output": "dist"
     },
     "files": [
-      "**/*"
+      "**/*",
+      "ADD_TRUSTED_LOCATION.ps1"
     ],
     "extraResources": [
       {
-        "from": "../ADD_TRUSTED_LOCATION.ps1",
+        "from": "ADD_TRUSTED_LOCATION.ps1",
         "to": "ADD_TRUSTED_LOCATION.ps1"
+      },
+      {
+        "from": "../certs",
+        "to": "certs"
       }
     ],
     "win": {

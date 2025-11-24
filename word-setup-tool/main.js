@@ -76,7 +76,7 @@ async function autoSetupWord() {
     try {
       const isDev = !app.isPackaged;
       const scriptPath = isDev 
-        ? path.join(__dirname, '..', 'ADD_TRUSTED_LOCATION.ps1')
+        ? path.join(__dirname, 'ADD_TRUSTED_LOCATION.ps1')
         : path.join(process.resourcesPath, 'ADD_TRUSTED_LOCATION.ps1');
       
       if (!fs.existsSync(scriptPath)) {
