@@ -31,6 +31,18 @@ if (Test-Path $certPath) {
     Write-Host "    WARNING - Certificate file not found at: $certPath" -ForegroundColor Yellow
 }
 
+# Disable SSL/TLS Certificate Warnings
+$securityPath = "HKCU:\Software\Microsoft\Office\16.0\Word\Security"
+if (-not (Test-Path $securityPath)) {
+    New-Item -Path $securityPath -Force | Out-Null
+}
+
+# Suppress certificate warnings
+Set-ItemProperty -Path $securityPath -Name "DisableTLSWarning" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $securityPath -Name "SuppressSecurityAlerts" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+
+Write-Host "    OK - SSL Certificate warnings disabled" -ForegroundColor Green
+
 Write-Host "[2/6] Disabling Protected View..." -ForegroundColor Yellow
 
 # Disable Protected View
