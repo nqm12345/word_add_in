@@ -34,19 +34,41 @@ Set-ItemProperty -Path $trustedLocationsPath -Name "AllowNetworkLocations" -Valu
 
 Write-Host "    OK - Network locations enabled" -ForegroundColor Green
 
-Write-Host "[3/5] Adding Trusted Location..." -ForegroundColor Yellow
+Write-Host "[3/5] Adding Trusted Locations..." -ForegroundColor Yellow
 
-# Add Trusted Location
+# Add Trusted Location for API (port 3000)
 $location99Path = "HKCU:\Software\Microsoft\Office\16.0\Word\Security\Trusted Locations\Location99"
 if (-not (Test-Path $location99Path)) {
     New-Item -Path $location99Path -Force | Out-Null
 }
 
 Set-ItemProperty -Path $location99Path -Name "Path" -Value "https://wordserver.local:3000/" -Type String -Force
-Set-ItemProperty -Path $location99Path -Name "Description" -Value "Word Server Editor" -Type String -Force
+Set-ItemProperty -Path $location99Path -Name "Description" -Value "Word Server Editor (API)" -Type String -Force
 Set-ItemProperty -Path $location99Path -Name "AllowSubFolders" -Value 1 -Type DWord -Force
 
-Write-Host "    OK - Trusted Location: https://wordserver.local:3000/" -ForegroundColor Green
+Write-Host "    OK - Trusted Location (API): https://wordserver.local:3000/" -ForegroundColor Green
+
+# Add Trusted Location for WebDAV (port 3001)  
+$location98Path = "HKCU:\Software\Microsoft\Office\16.0\Word\Security\Trusted Locations\Location98"
+if (-not (Test-Path $location98Path)) {
+    New-Item -Path $location98Path -Force | Out-Null
+}
+
+Set-ItemProperty -Path $location98Path -Name "Path" -Value "https://wordserver.local:3001/" -Type String -Force
+Set-ItemProperty -Path $location98Path -Name "Description" -Value "Word WebDAV Server" -Type String -Force
+Set-ItemProperty -Path $location98Path -Name "AllowSubFolders" -Value 1 -Type DWord -Force
+
+Write-Host "    OK - Trusted Location (WebDAV): https://wordserver.local:3001/" -ForegroundColor Green
+
+# Enable Web Folders for WebDAV
+$webClientPath = "HKCU:\Software\Microsoft\Office\16.0\Common\Internet"
+if (-not (Test-Path $webClientPath)) {
+    New-Item -Path $webClientPath -Force | Out-Null
+}
+
+Set-ItemProperty -Path $webClientPath -Name "UseOnlineContent" -Value 1 -Type DWord -Force
+
+Write-Host "    OK - Web folders enabled" -ForegroundColor Green
 
 Write-Host "[4/5] Killing Word processes..." -ForegroundColor Yellow
 
