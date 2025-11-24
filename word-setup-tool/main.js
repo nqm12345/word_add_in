@@ -87,9 +87,17 @@ async function setupMkcert() {
         return;
       }
 
+      // Always use the project root for certs
+      // Development: word-setup-tool/../certs
+      // Production: <exe location>/../../certs (exe is in word-setup-tool/dist/)
       const certsDir = isDev
         ? path.join(__dirname, '..', 'certs')
-        : path.join(process.resourcesPath, 'certs');
+        : path.join(path.dirname(process.execPath), '..', '..', 'certs');
+
+      // Create certs directory if it doesn't exist
+      if (!fs.existsSync(certsDir)) {
+        fs.mkdirSync(certsDir, { recursive: true });
+      }
 
       // Send status update
       if (mainWindow) {
