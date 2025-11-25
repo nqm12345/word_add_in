@@ -28,8 +28,35 @@ namespace WordSetupTool
         public SetupService()
         {
             _appDir = AppDomain.CurrentDomain.BaseDirectory;
-            _certsDir = Path.Combine(_appDir, "..", "..", "certs");
             _mkcertPath = Path.Combine(_appDir, "mkcert.exe");
+            
+            // Find project root (folder containing "server" and "client")
+            _certsDir = FindCertsDirectory();
+        }
+        
+        private string FindCertsDirectory()
+        {
+            // Try to find project root by looking for "server" folder
+            string currentDir = _appDir;
+            
+            // Go up max 5 levels to find project root
+            for (int i = 0; i < 5; i++)
+            {
+                string? parentDir = Path.GetDirectoryName(currentDir);
+                if (parentDir == null) break;
+                
+                currentDir = parentDir;
+                
+                // Check if this is project root (has server folder)
+                string serverPath = Path.Combine(currentDir, "server");
+                if (Directory.Exists(serverPath))
+                {
+                    return Path.Combine(currentDir, "certs");
+                }
+            }
+            
+            // Fallback: create certs folder next to app
+            return Path.Combine(_appDir, "certs");
         }
 
         public async Task<SetupResult> RunSetupAsync()
