@@ -1,4 +1,7 @@
 node_modules/
+
+# Keep Electron version local only (backup)
+word-setup-tool/
 server/documents/
 *.log
 .env
