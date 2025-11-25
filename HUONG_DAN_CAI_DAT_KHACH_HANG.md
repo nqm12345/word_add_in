@@ -1,18 +1,31 @@
 # HƯỚNG DẪN CÀI ĐẶT HỆ THỐNG - KHÁCH HÀNG
 
 ## 📋 MỤC LỤC
-1. [Cài đặt phần mềm](#1-cài-đặt-phần-mềm)
-2. [Lấy code và cài dependencies](#2-lấy-code-và-cài-dependencies)
-3. [Setup hệ thống](#3-setup-hệ-thống)
-4. [Chạy dự án](#4-chạy-dự-án)
-5. [Test](#5-test)
-6. [Troubleshooting](#6-troubleshooting)
+1. [Yêu cầu hệ thống](#1-yêu-cầu-hệ-thống)
+2. [Cài đặt phần mềm](#2-cài-đặt-phần-mềm)
+3. [Lấy code và cài dependencies](#3-lấy-code-và-cài-dependencies)
+4. [Setup hệ thống với Word Setup Tool](#4-setup-hệ-thống-với-word-setup-tool)
+5. [Chạy dự án](#5-chạy-dự-án)
+6. [Test](#6-test)
+7. [Troubleshooting](#7-troubleshooting)
 
 ---
 
-## 1. CÀI ĐẶT PHẦN MỀM
+## 1. YÊU CẦU HỆ THỐNG
 
-### 1.1. MongoDB (Database)
+```
+✅ Windows 10/11 (64-bit)
+✅ Microsoft Word 2016 / 2019 / 2021 / Microsoft 365
+✅ 500 MB RAM trống
+✅ 200 MB disk trống
+✅ Quyền Administrator
+```
+
+---
+
+## 2. CÀI ĐẶT PHẦN MỀM
+
+### 2.1. MongoDB (Database)
 
 **Bước 1:** Download MongoDB
 ```
@@ -41,7 +54,7 @@ Phải thấy: `STATE: RUNNING`
 
 ---
 
-### 1.2. Node.js (JavaScript Runtime)
+### 2.2. Node.js (JavaScript Runtime)
 
 **Bước 1:** Download Node.js
 ```
@@ -58,7 +71,6 @@ Version: LTS (Long Term Support) - Recommended
 
 **Bước 3:** Kiểm tra Node.js đã cài
 ```cmd
-# Command Prompt
 node --version
 npm --version
 ```
@@ -67,7 +79,7 @@ Phải thấy: `v20.x.x` và `10.x.x`
 
 ---
 
-### 1.3. Git (Version Control)
+### 2.3. Git (Version Control)
 
 **Bước 1:** Download Git
 ```
@@ -91,19 +103,19 @@ Phải thấy: `git version 2.x.x`
 
 ---
 
-### 1.4. Microsoft Word
+### 2.4. Microsoft Word
 
 ```
 ✅ Phải có Microsoft Word Desktop đã cài sẵn
 ✅ Office 365 hoặc Office 2016 trở lên
-✅ Không cần setup gì thêm
+✅ Không cần setup gì thêm (app sẽ tự cấu hình)
 ```
 
 ---
 
-## 2. LẤY CODE VÀ CÀI DEPENDENCIES
+## 3. LẤY CODE VÀ CÀI DEPENDENCIES
 
-### 2.1. Clone code từ GitHub
+### 3.1. Clone code từ GitHub
 
 ```bash
 # Mở Command Prompt hoặc PowerShell
@@ -114,7 +126,7 @@ cd word_add_in
 
 ---
 
-### 2.2. Cài dependencies
+### 3.2. Cài dependencies
 
 #### **Server:**
 ```bash
@@ -134,88 +146,64 @@ cd ..
 
 Đợi ~1-2 phút, phải thấy: `added xxx packages`
 
-#### **Word Setup Tool:**
-```bash
-cd word-setup-tool
-npm install
-cd ..
+---
+
+## 4. SETUP HỆ THỐNG VỚI WORD SETUP TOOL
+
+### 4.1. Download Word Setup Tool
+
+**Bước 1:** Vào GitHub Releases
+```
+https://github.com/nqm12345/word_add_in/releases
 ```
 
-Đợi ~30 giây, phải thấy: `added xxx packages`
+**Bước 2:** Download file
+```
+WordSetupTool-v1.0.0.zip
+```
+
+**Bước 3:** Giải nén vào folder `word-setup-tool-wpf`
+```
+📁 word_add_in/
+└── word-setup-tool-wpf/
+    ├── WordSetupTool.exe    ← Giải nén vào đây
+    └── mkcert.exe           ← Giải nén vào đây
+```
 
 ---
 
-## 3. SETUP HỆ THỐNG
+### 4.2. Chạy Word Setup Tool
 
-### 3.1. Chạy Word Setup Tool
-
-**Bước 1:** Mở Word Setup Tool
+**Bước 1:** Chạy app
 ```
-1. Mở File Explorer
-2. Vào: C:\Users\Admin\Desktop\word_add_in\word-setup-tool\dist\
-3. Tìm file: "Word Setup Tool Setup 1.0.0.exe"
-4. Right-click → "Run as administrator"
-5. Click "Yes" ở UAC prompt
+1. Double-click file WordSetupTool.exe
+2. Windows hiện UAC popup → Click "Yes"
+3. App Word Setup Tool mở lên
 ```
 
 **Bước 2:** Chạy setup
 ```
-1. Click button "Auto Setup Word Desktop"
+1. Click button "🚀 BẮT ĐẦU SETUP"
 2. Đợi 30-60 giây
-3. Thấy: "✅ SETUP HOÀN TẤT!"
-4. Đọc hướng dẫn bước tiếp theo
-5. Đóng app
+3. Các bước hiện ✅ màu xanh
+4. Thấy: "Setup hoàn tất!"
 ```
 
-**App đã làm gì?**
+**App tự động làm:**
 ```
-✅ Setup hosts file (127.0.0.1 → wordserver.local)
-✅ Disable Protected View
+✅ Cấu hình hosts file (127.0.0.1 → wordserver.local)
+✅ Tắt Protected View
+✅ Thêm Trusted Location
 ✅ Enable Network Locations
-✅ Add Trusted Locations
-✅ Disable SSL warnings
-✅ Close Word processes
+✅ Cài đặt mkcert CA (SSL)
+✅ Tạo SSL Certificates
 ```
+
+**⚠️ KHÔNG CẦN LÀM THỦ CÔNG GÌ THÊM!**
 
 ---
 
-### 3.2. Setup SSL Certificates (THỦ CÔNG)
-
-**⚠️ QUAN TRỌNG: PHẢI LÀM BƯỚC NÀY!**
-
-**Bước 1:** Mở PowerShell as Administrator
-```
-1. Right-click Start button
-2. Chọn "Windows PowerShell (Admin)"
-3. Click "Yes"
-```
-
-**Bước 2:** Chạy các lệnh sau (Copy & Paste toàn bộ)
-
-```powershell
-cd C:\Users\Admin\Desktop\word_add_in\word-setup-tool
-.\mkcert.exe -install
-.\mkcert.exe -cert-file ..\certs\wordserver.local.crt -key-file ..\certs\wordserver.local.key wordserver.local localhost 127.0.0.1 ::1
-reg add "HKCU\Software\Microsoft\Office\16.0\Word\Security" /v AllowNetworkLocations /t REG_DWORD /d 1 /f
-```
-
-**Bước 3:** Kiểm tra certificates đã tạo
-```powershell
-cd ..\certs
-dir
-```
-
-**Phải thấy 2 files:**
-```
-wordserver.local.crt
-wordserver.local.key
-```
-
-**Nếu thấy 2 files → ✅ THÀNH CÔNG!**
-
----
-
-### 3.3. Restart máy
+### 4.3. Restart máy
 
 **⚠️ BẮT BUỘC PHẢI RESTART!**
 
@@ -227,37 +215,21 @@ Hoặc: `Start → Power → Restart`
 
 ---
 
-## 4. CHẠY DỰ ÁN
+## 5. CHẠY DỰ ÁN
 
-**SAU KHI RESTART MÁY, mở 3 terminals:**
+**SAU KHI RESTART MÁY, mở 2 terminals:**
 
-### Terminal 1: API Server
+### Terminal 1: Server (API + WebDAV)
 
 ```bash
 cd C:\Users\Admin\Desktop\word_add_in\server
-node server-mongodb.js
+npm start
 ```
 
 **Phải thấy:**
 ```
 ✓ MongoDB connected
 ✓ API Server running on https://wordserver.local:3000
-```
-
-**⚠️ GIỮ TERMINAL NÀY MỞ!**
-
----
-
-### Terminal 2: WebDAV Server
-
-```bash
-cd C:\Users\Admin\Desktop\word_add_in\server
-node webdav-simple.js
-```
-
-**Phải thấy:**
-```
-✓ MongoDB connected
 ✓ WebDAV Server running on https://wordserver.local:3001
 ```
 
@@ -265,30 +237,30 @@ node webdav-simple.js
 
 ---
 
-### Terminal 3: React Client
+### Terminal 2: React Client
 
 ```bash
 cd C:\Users\Admin\Desktop\word_add_in\client
-npm run dev
+npm start
 ```
 
 **Phải thấy:**
 ```
 VITE ready in 500ms
-➜ Local: http://localhost:5173
+➜ Local: http://localhost:3000
 ```
 
 **⚠️ GIỮ TERMINAL NÀY MỞ!**
 
 ---
 
-## 5. TEST
+## 6. TEST
 
-### 5.1. Test Upload File
+### 6.1. Test Upload File
 
 **Bước 1:** Mở browser
 ```
-http://localhost:5173
+http://localhost:3000
 ```
 
 **Bước 2:** Upload file Word
@@ -308,7 +280,7 @@ http://localhost:5173
 
 ---
 
-### 5.2. Test Edit File
+### 6.2. Test Edit File
 
 **Bước 1:** Click button "Chỉnh sửa" trên file vừa upload
 
@@ -345,7 +317,7 @@ http://localhost:5173
 
 ---
 
-### 5.3. Test Download File
+### 6.3. Test Download File
 
 ```
 1. Click button "Tải về" trên file
@@ -356,9 +328,9 @@ http://localhost:5173
 
 ---
 
-## 6. TROUBLESHOOTING
+## 7. TROUBLESHOOTING
 
-### 6.1. Lỗi "Cannot connect to MongoDB"
+### 7.1. Lỗi "Cannot connect to MongoDB"
 
 **Nguyên nhân:** MongoDB service chưa chạy
 
@@ -370,7 +342,7 @@ net start MongoDB
 
 ---
 
-### 6.2. Lỗi "Port 3000 already in use"
+### 7.2. Lỗi "Port 3000 already in use"
 
 **Nguyên nhân:** API Server đang chạy rồi
 
@@ -386,28 +358,28 @@ taskkill /f /pid <PID>
 
 ---
 
-### 6.3. Vẫn có SSL warning khi upload
+### 7.3. Vẫn có SSL warning khi upload
 
-**Nguyên nhân:** Chưa chạy mkcert hoặc chưa restart
+**Nguyên nhân:** Chưa chạy Word Setup Tool hoặc chưa restart
 
 **Giải pháp:**
-```powershell
-# 1. Kiểm tra certificates đã tạo chưa
-cd C:\Users\Admin\Desktop\word_add_in\certs
-dir
+```
+1. Kiểm tra folder certs/ có 2 files:
+   - wordserver.local.crt
+   - wordserver.local.key
 
-# 2. Nếu chưa có, chạy lại mkcert
-cd ..\word-setup-tool
-.\mkcert.exe -install
-.\mkcert.exe -cert-file ..\certs\wordserver.local.crt -key-file ..\certs\wordserver.local.key wordserver.local localhost 127.0.0.1 ::1
+2. Nếu không có, chạy lại Word Setup Tool:
+   - Double-click WordSetupTool.exe
+   - Click "BẮT ĐẦU SETUP"
 
-# 3. Restart máy
-shutdown /r /t 0
+3. RESTART MÁY
+
+4. Test lại
 ```
 
 ---
 
-### 6.4. Word mở file nhưng vẫn có SSL warning
+### 7.4. Word mở file nhưng vẫn có SSL warning
 
 **Nguyên nhân:** Registry chưa setup đầy đủ
 
@@ -420,7 +392,7 @@ shutdown /r /t 0
 
 ---
 
-### 6.5. Word không mở file, chỉ download
+### 7.5. Word không mở file, chỉ download
 
 **Nguyên nhân:** `ms-word:ofe|u|` protocol chưa được register
 
@@ -433,31 +405,28 @@ shutdown /r /t 0
 
 ---
 
-### 6.6. Kiểm tra toàn bộ setup
+### 7.6. Chạy lại Word Setup Tool
 
-**Chạy script kiểm tra:**
+**Nếu gặp bất kỳ lỗi nào, thử chạy lại setup:**
 
-```bash
-cd C:\Users\Admin\Desktop\word_add_in
-.\CHECK_SIMPLE.bat
+```
+1. Mở folder: word-setup-tool-wpf
+2. Double-click: WordSetupTool.exe
+3. Click "Yes" khi UAC hỏi
+4. Click "🚀 BẮT ĐẦU SETUP"
+5. Đợi hoàn tất
+6. RESTART MÁY
+7. Test lại
 ```
 
-**Hoặc:**
-
-```bash
-Double-click file: CHECK_SIMPLE.bat
+**App sẽ tự động kiểm tra và sửa:**
 ```
-
-**Script sẽ kiểm tra:**
-```
-[1/6] Hosts file
-[2/6] Trusted Locations
-[3/6] Protected View
-[4/6] Network Locations
-[5/6] Certificates
-[6/6] mkcert CA
-
-→ Hiện kết quả: [OK] hoặc [ERROR]
+✅ Hosts file
+✅ Trusted Locations
+✅ Protected View
+✅ Network Locations
+✅ SSL Certificates
+✅ mkcert CA
 ```
 
 ---
@@ -466,10 +435,10 @@ Double-click file: CHECK_SIMPLE.bat
 
 Nếu gặp vấn đề không giải quyết được, chụp màn hình lỗi và gửi kèm:
 
-1. Output của `CHECK_SIMPLE.bat`
+1. Screenshot kết quả của Word Setup Tool
 2. Screenshot lỗi trên browser
 3. Screenshot lỗi trên Word (nếu có)
-4. Output của terminal servers (API, WebDAV, Client)
+4. Output của terminal servers
 
 ---
 
@@ -486,18 +455,17 @@ LẤY CODE:
 □ Clone từ Git ✅
 □ npm install - server ✅
 □ npm install - client ✅
-□ npm install - word-setup-tool ✅
 
 SETUP HỆ THỐNG:
-□ Chạy Word Setup Tool (as Admin) ✅
-□ Chạy mkcert (PowerShell as Admin) ✅
-□ Kiểm tra certificates ✅
-□ Restart máy ✅
+□ Download WordSetupTool.zip từ GitHub Releases ✅
+□ Giải nén vào word-setup-tool-wpf/ ✅
+□ Chạy WordSetupTool.exe ✅
+□ Click "BẮT ĐẦU SETUP" → Hoàn tất ✅
+□ RESTART MÁY ✅
 
 CHẠY DỰ ÁN:
-□ Start API Server ✅
-□ Start WebDAV Server ✅
-□ Start React Client ✅
+□ npm start (server) ✅
+□ npm start (client) ✅
 
 TEST:
 □ Upload file Word ✅
