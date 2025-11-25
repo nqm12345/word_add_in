@@ -70,7 +70,7 @@ function checkWordSetup() {
   }
 }
 
-// Auto setup mkcert and generate certificates
+// Auto setup mkcert and generate certificates (with timeout to prevent hanging)
 async function setupMkcert() {
   return new Promise((resolve) => {
     try {
@@ -99,18 +99,50 @@ async function setupMkcert() {
         fs.mkdirSync(certsDir, { recursive: true });
       }
 
+      // Check if certificates already exist
+      const crtPath = path.join(certsDir, 'wordserver.local.crt');
+      const keyPath = path.join(certsDir, 'wordserver.local.key');
+      
+      if (fs.existsSync(crtPath) && fs.existsSync(keyPath)) {
+        resolve({ 
+          success: true, 
+          message: 'SSL Certificates đã tồn tại!\n\n✓ Certificates: OK\n✓ Không cần tạo lại!',
+          alreadyExists: true
+        });
+        return;
+      }
+
       // Send status update
       if (mainWindow) {
         mainWindow.webContents.send('update-status', {
           step: 'mkcert-install',
-          message: 'Đang cài đặt mkcert CA...'
+          message: 'Đang cài đặt mkcert CA (có thể hiện popup UAC)...'
         });
       }
 
+      // Timeout handler (30 seconds)
+      const timeout = setTimeout(() => {
+        resolve({ 
+          success: false, 
+          message: 'Timeout cài mkcert CA.\n\n⚠️ Vui lòng chạy THỦ CÔNG:\n\n' +
+                   'PowerShell as Admin:\n' +
+                   'cd word-setup-tool\n' +
+                   '.\\mkcert.exe -install\n' +
+                   '.\\mkcert.exe -cert-file ..\\certs\\wordserver.local.crt -key-file ..\\certs\\wordserver.local.key wordserver.local localhost 127.0.0.1 ::1',
+          timeout: true 
+        });
+      }, 30000);
+
       // Step 1: Install mkcert CA
-      exec(`"${mkcertPath}" -install`, (error, stdout, stderr) => {
+      exec(`"${mkcertPath}" -install`, { timeout: 25000 }, (error, stdout, stderr) => {
         if (error) {
-          resolve({ success: false, message: 'Lỗi cài đặt mkcert CA: ' + error.message });
+          clearTimeout(timeout);
+          resolve({ 
+            success: false, 
+            message: 'Lỗi cài mkcert CA.\n\n⚠️ Vui lòng chạy THỦ CÔNG:\n\n' +
+                     'PowerShell as Admin:\n' +
+                     '.\\mkcert.exe -install' 
+          });
           return;
         }
 
@@ -122,50 +154,37 @@ async function setupMkcert() {
           });
         }
 
-        // Delete old certificates
-        const oldCrt = path.join(certsDir, 'wordserver.local.crt');
-        const oldKey = path.join(certsDir, 'wordserver.local.key');
+        // Generate certificates with proper filenames directly
+        const generateCmd = `"${mkcertPath}" -cert-file "${crtPath}" -key-file "${keyPath}" wordserver.local localhost 127.0.0.1 ::1`;
         
-        if (fs.existsSync(oldCrt)) fs.unlinkSync(oldCrt);
-        if (fs.existsSync(oldKey)) fs.unlinkSync(oldKey);
-
-        // Generate new certificates
-        const generateCmd = `cd /d "${certsDir}" && "${mkcertPath}" wordserver.local localhost 127.0.0.1 ::1`;
-        
-        exec(generateCmd, (error, stdout, stderr) => {
+        exec(generateCmd, { timeout: 15000 }, (error, stdout, stderr) => {
+          clearTimeout(timeout);
+          
           if (error) {
-            resolve({ success: false, message: 'Lỗi tạo certificates: ' + error.message });
+            resolve({ 
+              success: false, 
+              message: 'Lỗi tạo certificates.\n\n⚠️ Vui lòng chạy THỦ CÔNG:\n\n' +
+                       'PowerShell as Admin:\n' +
+                       '.\\mkcert.exe -cert-file ..\\certs\\wordserver.local.crt -key-file ..\\certs\\wordserver.local.key wordserver.local localhost 127.0.0.1 ::1' 
+            });
             return;
           }
 
-          // Rename files
-          try {
-            const files = fs.readdirSync(certsDir);
-            const pemFiles = files.filter(f => f.endsWith('.pem'));
-            
-            pemFiles.forEach(file => {
-              const fullPath = path.join(certsDir, file);
-              let newName;
-              
-              if (file.includes('-key')) {
-                newName = 'wordserver.local.key';
-              } else {
-                newName = 'wordserver.local.crt';
-              }
-              
-              const newPath = path.join(certsDir, newName);
-              fs.renameSync(fullPath, newPath);
-            });
-
+          // Verify certificates were created
+          if (fs.existsSync(crtPath) && fs.existsSync(keyPath)) {
             resolve({ 
               success: true, 
-              message: 'SSL Certificates đã được tạo và cài đặt!\n\n' +
+              message: 'SSL Certificates đã được tạo!\n\n' +
                        '✓ mkcert CA installed\n' +
-                       '✓ Certificates generated\n' +
-                       '✓ Browser sẽ tự động trust (không cần accept SSL)!'
+                       '✓ wordserver.local.crt\n' +
+                       '✓ wordserver.local.key\n' +
+                       '✓ Vị trí: certs/ (bên ngoài word-setup-tool)'
             });
-          } catch (err) {
-            resolve({ success: false, message: 'Lỗi rename files: ' + err.message });
+          } else {
+            resolve({ 
+              success: false, 
+              message: 'Không tìm thấy certificates sau khi tạo.\n\nVui lòng kiểm tra thư mục certs/' 
+            });
           }
         });
       });
@@ -281,6 +300,19 @@ ipcMain.handle('setup-word', async () => {
   return await autoSetupWord();
 });
 
+// Check if SSL certificates exist
+function checkCertificates() {
+  const isDev = !app.isPackaged;
+  const certsDir = isDev
+    ? path.join(__dirname, '..', 'certs')
+    : path.join(path.dirname(process.execPath), '..', '..', 'certs');
+  
+  const crtPath = path.join(certsDir, 'wordserver.local.crt');
+  const keyPath = path.join(certsDir, 'wordserver.local.key');
+  
+  return fs.existsSync(crtPath) && fs.existsSync(keyPath);
+}
+
 // Main logic
 app.whenReady().then(async () => {
   createWindow();
@@ -290,50 +322,93 @@ app.whenReady().then(async () => {
     // Check if already configured
     mainWindow.webContents.send('update-status', {
       step: 'checking',
-      message: 'Đang kiểm tra cấu hình Word Desktop...'
+      message: 'Đang kiểm tra cấu hình...'
     });
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     const isWordConfigured = checkWordSetup();
     const isHostsConfigured = checkHostsFile();
+    const isCertsConfigured = checkCertificates();
 
-    if (isWordConfigured && isHostsConfigured) {
-      // Already configured
+    if (isWordConfigured && isHostsConfigured && isCertsConfigured) {
+      // All already configured
       mainWindow.webContents.send('setup-complete', {
         success: true,
         alreadyConfigured: true,
-        message: 'Word Desktop đã được cấu hình!\n\n✅ Hosts file OK\n✅ Word Registry OK\n\nKhông cần setup lại.\n\nBạn có thể đóng cửa sổ này.'
+        message: '✅ TẤT CẢ ĐÃ ĐƯỢC CẤU HÌNH!\n\n' +
+                 '✅ Hosts file: OK\n' +
+                 '✅ Word Registry: OK\n' +
+                 '✅ SSL Certificates: OK\n\n' +
+                 'Không cần setup lại.\n' +
+                 'Bạn có thể đóng cửa sổ này và chạy servers.'
       });
     } else {
-      // Need to setup - Run Word setup only (mkcert is manual)
+      // Need to setup
+      let wordResult = { success: true };
+      let mkcertResult = { success: true };
       
-      mainWindow.webContents.send('update-status', {
-        step: 'word',
-        message: '⚙️ Đang setup Word Desktop...'
-      });
+      // Step 1: Setup Word (hosts + registry)
+      if (!isWordConfigured || !isHostsConfigured) {
+        mainWindow.webContents.send('update-status', {
+          step: 'word',
+          message: '⚙️ [1/2] Đang setup Word Desktop...'
+        });
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
+        wordResult = await autoSetupWord();
+      }
 
-      const wordResult = await autoSetupWord();
+      // Step 2: Setup mkcert (CA + certificates)
+      if (!isCertsConfigured && wordResult.success) {
+        mainWindow.webContents.send('update-status', {
+          step: 'mkcert',
+          message: '🔐 [2/2] Đang setup SSL Certificates...\n(Có thể hiện popup UAC, vui lòng click Yes)'
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+        mkcertResult = await setupMkcert();
+      }
+
+      // Final result
+      const allSuccess = wordResult.success && mkcertResult.success;
+      const mkcertFailed = !mkcertResult.success && !mkcertResult.alreadyExists;
+      
+      let finalMessage = '';
+      
+      if (allSuccess) {
+        finalMessage = '✅ SETUP HOÀN TẤT!\n\n' +
+          '📝 Hosts file: OK\n' +
+          '⚙️ Word Registry: OK\n' +
+          '🔐 SSL Certificates: OK\n\n' +
+          '⚠️ BƯỚC CUỐI (BẮT BUỘC):\n\n' +
+          '🔄 RESTART MÁY TÍNH\n\n' +
+          'Sau khi restart:\n' +
+          '1. Mở 3 terminals\n' +
+          '2. Chạy: node server-mongodb.js\n' +
+          '3. Chạy: node webdav-simple.js\n' +
+          '4. Chạy: npm run dev (trong client/)\n' +
+          '5. Mở: http://localhost:5173';
+      } else if (wordResult.success && mkcertFailed) {
+        finalMessage = '⚠️ SETUP MỘT PHẦN!\n\n' +
+          '✅ Hosts file: OK\n' +
+          '✅ Word Registry: OK\n' +
+          '❌ SSL Certificates: LỖI\n\n' +
+          '⚠️ CHẠY THỦ CÔNG (PowerShell Admin):\n\n' +
+          'cd word-setup-tool\n' +
+          '.\\mkcert.exe -install\n' +
+          '.\\mkcert.exe -cert-file ..\\certs\\wordserver.local.crt -key-file ..\\certs\\wordserver.local.key wordserver.local localhost 127.0.0.1 ::1\n\n' +
+          '🔄 SAU ĐÓ RESTART MÁY';
+      } else {
+        finalMessage = '❌ SETUP THẤT BẠI!\n\n' + 
+          (wordResult.message || '') + '\n' + 
+          (mkcertResult.message || '');
+      }
 
       mainWindow.webContents.send('setup-complete', {
-        success: wordResult.success,
+        success: allSuccess,
         alreadyConfigured: false,
-        message: wordResult.success 
-          ? '✅ SETUP HOÀN TẤT!\n\n' +
-            '📝 Hosts file: OK\n' +
-            '⚙️ Word Registry: OK\n\n' +
-            '⚠️ BƯỚC TIẾP THEO (BẮT BUỘC):\n\n' +
-            '1. MỞ POWERSHELL AS ADMIN\n' +
-            '2. CHẠY CÁC LỆNH SAU:\n\n' +
-            '   cd C:\\Users\\Admin\\Desktop\\word_add_in\\word-setup-tool\n' +
-            '   .\\mkcert.exe -install\n' +
-            '   .\\mkcert.exe -cert-file ..\\certs\\wordserver.local.crt -key-file ..\\certs\\wordserver.local.key wordserver.local localhost 127.0.0.1 ::1\n\n' +
-            '3. RESTART COMPUTER\n' +
-            '4. Chạy servers & test\n\n' +
-            '📄 Chi tiết: HUONG_DAN_CAI_DAT_SSL.md'
-          : '❌ Lỗi setup:\n\n' + wordResult.message
+        message: finalMessage
       });
     }
   });
