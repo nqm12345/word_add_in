@@ -1,0 +1,3 @@
+# This file keeps the certs/ folder in Git
+# SSL certificates will be generated here by mkcert
+# DO NOT commit actual .crt, .key, .pem files!

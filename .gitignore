@@ -4,3 +4,8 @@ server/documents/
 .env
 .DS_Store
 Thumbs.db
+
+# SSL certificates (must be generated on each machine)
+certs/*.crt
+certs/*.key
+certs/*.pem
