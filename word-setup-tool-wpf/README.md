@@ -4,11 +4,11 @@
 
 ## ✨ Features
 
-- 🎨 **Modern UI** với Material Design
+- 🎨 **Modern UI** với Custom Dark Theme
 - 🌙 **Dark Theme** mặc định
-- ⚡ **Nhẹ** (~20MB thay vì 150MB Electron)
 - 🔒 **Native Windows** integration
 - 🚀 **Tự động** cấu hình tất cả
+- 📦 **Self-contained** - không cần cài .NET Runtime
 
 ## 📋 Chức năng
 
@@ -58,19 +58,19 @@ word-setup-tool-wpf/
 ## 🎨 Tech Stack
 
 - **Framework**: .NET 8.0 WPF
-- **UI Library**: MaterialDesignInXAML 5.0
+- **UI**: Custom XAML (Pure WPF, no external UI libraries)
 - **Language**: C# 12
 - **Target**: Windows 10/11 x64
 
-## 📊 So sánh với Electron version
+## 📊 Thông số
 
-| Feature | Electron | WPF |
-|---------|----------|-----|
-| Kích thước | ~150MB | ~20MB |
-| RAM | ~100MB | ~30MB |
-| Startup | 2-3s | <1s |
-| Windows integration | Trung bình | Native |
-| UI | HTML/CSS | XAML |
+| Feature | Value |
+|---------|-------|
+| Kích thước | ~160MB (self-contained) |
+| RAM | ~30MB |
+| Startup | <1s |
+| Requires | Windows 10/11 64-bit |
+| Admin | Required (auto-prompt) |
 
 ## 🚀 Usage
 
