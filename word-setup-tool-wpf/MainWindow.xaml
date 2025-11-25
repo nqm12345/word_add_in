@@ -1,0 +1,274 @@
+<Window x:Class="WordSetupTool.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Word Setup Tool" 
+        Height="720" Width="520"
+        MinHeight="700" MinWidth="480"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanMinimize"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+
+    <Border CornerRadius="15" Background="#1a1a2e">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="20" ShadowDepth="0" Opacity="0.5" Color="Black"/>
+        </Border.Effect>
+        
+        <Grid>
+            <!-- Window Controls -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,10,0">
+                <Button Content="─" Click="BtnMinimize_Click" 
+                        Width="30" Height="30" FontSize="14"
+                        Background="Transparent" Foreground="#888"
+                        BorderThickness="0" Cursor="Hand"/>
+                <Button Content="✕" Click="BtnClose_Click" 
+                        Width="30" Height="30" FontSize="12"
+                        Background="Transparent" Foreground="#888"
+                        BorderThickness="0" Cursor="Hand"/>
+            </StackPanel>
+            
+            <Grid Margin="30,20,30,30">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header with Gradient Icon -->
+                <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,20,0,25">
+                    <Border Width="80" Height="80" CornerRadius="40" HorizontalAlignment="Center">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#667eea" Offset="0"/>
+                                <GradientStop Color="#764ba2" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <TextBlock Text="W" FontSize="40" FontWeight="Bold" 
+                                   Foreground="White" HorizontalAlignment="Center" 
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Word Setup Tool" 
+                               FontSize="26" FontWeight="Bold"
+                               HorizontalAlignment="Center" Margin="0,15,0,0"
+                               Foreground="White"/>
+                    <TextBlock Text="Cấu hình Word Desktop để edit files từ server"
+                               FontSize="13" Foreground="#888"
+                               HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                </StackPanel>
+
+                <!-- Progress Section -->
+                <Border Grid.Row="1" CornerRadius="12" Padding="20" Margin="0,0,0,15"
+                        Background="#16213e">
+                    <StackPanel>
+                        <TextBlock x:Name="txtStatus" Text="Sẵn sàng setup..." 
+                                   FontSize="15" FontWeight="SemiBold" 
+                                   Foreground="White" Margin="0,0,0,15"/>
+                        
+                        <Border CornerRadius="5" Height="10" Background="#0f0f23">
+                            <Border x:Name="progressFill" CornerRadius="5" 
+                                    HorizontalAlignment="Left" Width="0">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#667eea" Offset="0"/>
+                                        <GradientStop Color="#764ba2" Offset="0.5"/>
+                                        <GradientStop Color="#f093fb" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                        </Border>
+                        
+                        <TextBlock x:Name="txtProgress" Text="0%" 
+                                   HorizontalAlignment="Right" Margin="0,8,0,0"
+                                   FontSize="12" Foreground="#888"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Checklist -->
+                <Border Grid.Row="2" CornerRadius="12" Padding="20" Margin="0,0,0,15"
+                        Background="#16213e">
+                    <StackPanel x:Name="checklistPanel">
+                        <!-- Step 1 -->
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="32"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="iconBg1" Width="24" Height="24" CornerRadius="12" Background="#2d2d44">
+                                <TextBlock x:Name="icon1" Text="○" FontSize="14" 
+                                           Foreground="#555" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" x:Name="step1" Text="Kiểm tra cấu hình hiện tại"
+                                       VerticalAlignment="Center" Foreground="#777" FontSize="13"/>
+                        </Grid>
+                        
+                        <!-- Step 2 -->
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="32"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="iconBg2" Width="24" Height="24" CornerRadius="12" Background="#2d2d44">
+                                <TextBlock x:Name="icon2" Text="○" FontSize="14" 
+                                           Foreground="#555" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" x:Name="step2" Text="Cấu hình hosts file"
+                                       VerticalAlignment="Center" Foreground="#777" FontSize="13"/>
+                        </Grid>
+                        
+                        <!-- Step 3 -->
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="32"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="iconBg3" Width="24" Height="24" CornerRadius="12" Background="#2d2d44">
+                                <TextBlock x:Name="icon3" Text="○" FontSize="14" 
+                                           Foreground="#555" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" x:Name="step3" Text="Tắt Protected View"
+                                       VerticalAlignment="Center" Foreground="#777" FontSize="13"/>
+                        </Grid>
+                        
+                        <!-- Step 4 -->
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="32"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="iconBg4" Width="24" Height="24" CornerRadius="12" Background="#2d2d44">
+                                <TextBlock x:Name="icon4" Text="○" FontSize="14" 
+                                           Foreground="#555" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" x:Name="step4" Text="Thêm Trusted Location"
+                                       VerticalAlignment="Center" Foreground="#777" FontSize="13"/>
+                        </Grid>
+                        
+                        <!-- Step 5 -->
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="32"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="iconBg5" Width="24" Height="24" CornerRadius="12" Background="#2d2d44">
+                                <TextBlock x:Name="icon5" Text="○" FontSize="14" 
+                                           Foreground="#555" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" x:Name="step5" Text="Enable Network Locations"
+                                       VerticalAlignment="Center" Foreground="#777" FontSize="13"/>
+                        </Grid>
+                        
+                        <!-- Step 6 -->
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="32"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="iconBg6" Width="24" Height="24" CornerRadius="12" Background="#2d2d44">
+                                <TextBlock x:Name="icon6" Text="○" FontSize="14" 
+                                           Foreground="#555" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" x:Name="step6" Text="Cài đặt mkcert CA"
+                                       VerticalAlignment="Center" Foreground="#777" FontSize="13"/>
+                        </Grid>
+                        
+                        <!-- Step 7 -->
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="32"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="iconBg7" Width="24" Height="24" CornerRadius="12" Background="#2d2d44">
+                                <TextBlock x:Name="icon7" Text="○" FontSize="14" 
+                                           Foreground="#555" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" x:Name="step7" Text="Tạo SSL Certificates"
+                                       VerticalAlignment="Center" Foreground="#777" FontSize="13"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Result Message -->
+                <Border x:Name="resultCard" Grid.Row="3" CornerRadius="12" Padding="15" Margin="0,0,0,15"
+                        Visibility="Collapsed" Background="#16213e">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Border x:Name="resultIconBg" Width="28" Height="28" CornerRadius="14">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#4CAF50" Offset="0"/>
+                                        <GradientStop Color="#8BC34A" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <TextBlock x:Name="resultIcon" Text="✓" FontSize="16" FontWeight="Bold"
+                                           Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock x:Name="resultTitle" Text="Hoàn tất!" 
+                                       FontSize="16" FontWeight="Bold" Foreground="White"
+                                       VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        </StackPanel>
+                        <TextBlock x:Name="resultMessage" TextWrapping="Wrap" 
+                                   FontSize="12" Foreground="#aaa"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Buttons -->
+                <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5,0,0">
+                    <Button x:Name="btnSetup" Click="BtnSetup_Click"
+                            Width="200" Height="45" Cursor="Hand" BorderThickness="0">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border CornerRadius="22" x:Name="btnBorder">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#667eea" Offset="0"/>
+                                            <GradientStop Color="#764ba2" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <TextBlock Text="🚀 BẮT ĐẦU SETUP" FontSize="14" FontWeight="Bold"
+                                               Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="btnBorder" Property="Background">
+                                            <Setter.Value>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                    <GradientStop Color="#7c8ff8" Offset="0"/>
+                                                    <GradientStop Color="#8a5eb8" Offset="1"/>
+                                                </LinearGradientBrush>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    
+                    <Button x:Name="btnCloseBottom" Click="BtnClose_Click" 
+                            Width="100" Height="45" Margin="15,0,0,0" Cursor="Hand" BorderThickness="0">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border CornerRadius="22" Background="#2d2d44" BorderBrush="#444" BorderThickness="1"
+                                        x:Name="btnBorder">
+                                    <TextBlock Text="ĐÓNG" FontSize="14" FontWeight="SemiBold"
+                                               Foreground="#888" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="btnBorder" Property="Background" Value="#3d3d54"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
