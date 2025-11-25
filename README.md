@@ -83,19 +83,17 @@ npm start
 **⭐ Xem file:** `HUONG_DAN_CAI_DAT_KHACH_HANG.md` - Hướng dẫn đầy đủ từng bước
 
 **Files hướng dẫn:**
-- 📘 **HUONG_DAN_CAI_DAT_KHACH_HANG.md** - Setup chi tiết đầy đủ (30 phút)
-- 🔍 **CHECK_SETUP.ps1** - Script kiểm tra setup
-- ⚡ **CHECK_SIMPLE.bat** - Script kiểm tra đơn giản (double-click)
-- 🔧 **word-setup-tool/** - App tự động setup Word Registry
+- 📘 **HUONG_DAN_CAI_DAT_KHACH_HANG.md** - Setup chi tiết đầy đủ
+- 🔧 **word-setup-tool-wpf/** - App tự động setup (WPF, .NET 8)
 
 ### Tóm tắt Setup:
 
 1. **Cài phần mềm:** MongoDB, Node.js, Git, Word Desktop
-2. **Clone & install:** `git clone` → `npm install` (server, client, word-setup-tool)
-3. **Setup:** Chạy Word Setup Tool (as Admin)
-4. **SSL certificates:** `mkcert -install` + generate certs (THỦ CÔNG)
+2. **Clone & install:** `git clone` → `npm install` (server, client)
+3. **Download app:** Tải `WordSetupTool.exe` từ GitHub Releases
+4. **Setup:** Chạy Word Setup Tool → TỰ ĐỘNG setup hosts, registry, SSL
 5. **Restart máy:** Bắt buộc
-6. **Start servers:** API + WebDAV + Client
+6. **Start servers:** `npm start` (server) + `npm start` (client)
 
 **→ Chi tiết xem `HUONG_DAN_CAI_DAT_KHACH_HANG.md`**
 
@@ -107,15 +105,14 @@ npm start
 npm start
 ```
 
-Sẽ chạy 3 servers:
-- API Server: `https://wordserver.local:3000`
-- WebDAV Server: `https://wordserver.local:3001`
-- React App: `http://localhost:5173`
+Sẽ chạy 2 servers:
+- API + WebDAV Server: `https://wordserver.local:3000` + `:3001`
+- React App: `http://localhost:3000`
 
 ### Mở React App
 
 ```
-http://localhost:5173
+http://localhost:3000
 ```
 
 ### Workflow
@@ -203,8 +200,8 @@ Files được lưu trong MongoDB GridFS:
 **Nguyên nhân:** Windows chưa trust WebDAV location
 
 **Giải pháp:**
-1. Chạy `ADD_TRUSTED_LOCATION.ps1`
-2. Hoặc restart máy
+1. Chạy lại `WordSetupTool.exe`
+2. Restart máy
 
 ### Ctrl+S không lưu về server
 
