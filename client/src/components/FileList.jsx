@@ -1,6 +1,15 @@
-import { Edit, Download, Trash2, RefreshCw, FileText, Calendar, HardDrive } from 'lucide-react';
+import { Edit, Download, Trash2, RefreshCw, FileText, Calendar, HardDrive, GitBranch } from 'lucide-react';
 import { formatFileSize, formatDate } from '../utils/formatters';
 
+/**
+ * Component hiển thị danh sách files với version tracking
+ * 
+ * Props:
+ * - files: Array of file objects from MongoDB
+ * - onEdit(fileId, filename): Mở file trong Word
+ * - onDownload(fileId, filename): Tải file về
+ * - onDelete(fileId, filename): Xóa file
+ */
 export default function FileList({ files, loading, onEdit, onDownload, onDelete, onRefresh }) {
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -37,67 +46,87 @@ export default function FileList({ files, loading, onEdit, onDownload, onDelete,
             <thead>
               <tr className="border-b-2 border-gray-200">
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Tên File</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">Version</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Kích thước</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Ngày upload</th>
                 <th className="text-center py-3 px-4 font-semibold text-gray-700">Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {files.map((file, index) => (
-                <tr
-                  key={file._id || index}
-                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                >
-                  <td className="py-4 px-4">
-                    <div className="flex items-center space-x-3">
-                      <FileText className="w-5 h-5 text-blue-600" />
-                      <span className="font-medium text-gray-800">{file.filename}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center space-x-2 text-gray-600">
-                      <HardDrive className="w-4 h-4" />
-                      <span>{formatFileSize(file.length)}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center space-x-2 text-gray-600">
-                      <Calendar className="w-4 h-4" />
-                      <span>{formatDate(file.uploadDate)}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center justify-center space-x-2">
-                      <button
-                        onClick={() => onEdit(file.filename)}
-                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1 text-sm"
-                        title="Chỉnh sửa trong Word Desktop"
-                      >
-                        <Edit className="w-4 h-4" />
-                        <span>Chỉnh sửa</span>
-                      </button>
-                      
-                      <button
-                        onClick={() => onDownload(file.filename)}
-                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-1 text-sm"
-                        title="Tải xuống"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Tải xuống</span>
-                      </button>
-                      
-                      <button
-                        onClick={() => onDelete(file.filename)}
-                        className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-1 text-sm"
-                        title="Xóa file"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>Xóa</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {files.map((file, index) => {
+                // Lấy version từ metadata (mặc định là 1)
+                const version = file.metadata?.version || 1;
+                const isLatest = file.metadata?.isLatest !== false;
+                
+                return (
+                  <tr
+                    key={file._id || index}
+                    className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!isLatest ? 'opacity-60' : ''}`}
+                  >
+                    <td className="py-4 px-4">
+                      <div className="flex items-center space-x-3">
+                        <FileText className="w-5 h-5 text-blue-600" />
+                        <div>
+                          <span className="font-medium text-gray-800">{file.filename}</span>
+                          {isLatest && (
+                            <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                              Mới nhất
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <GitBranch className="w-4 h-4" />
+                        <span className="font-mono">v{version}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <HardDrive className="w-4 h-4" />
+                        <span>{formatFileSize(file.length)}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <Calendar className="w-4 h-4" />
+                        <span>{formatDate(file.uploadDate)}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center justify-center space-x-2">
+                        <button
+                          onClick={() => onEdit(file._id, file.filename)}
+                          className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1 text-sm"
+                          title={`Chỉnh sửa version ${version} trong Word Desktop`}
+                        >
+                          <Edit className="w-4 h-4" />
+                          <span>Chỉnh sửa</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => onDownload(file._id, file.filename)}
+                          className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-1 text-sm"
+                          title={`Tải xuống version ${version}`}
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Tải xuống</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => onDelete(file._id, file.filename)}
+                          className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-1 text-sm"
+                          title={`Xóa version ${version}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Xóa</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
