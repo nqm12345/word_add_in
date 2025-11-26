@@ -40,36 +40,26 @@ function App() {
     }
   };
 
-  /**
-   * Mở file trong Word Desktop
-   * Sử dụng fileId để tìm chính xác file (tránh conflict khi trùng tên)
-   */
-  const handleEdit = (fileId, filename) => {
-    const msWordUrl = api.getMsWordUrl(fileId, filename);
+  const handleEdit = (filename) => {
+    const msWordUrl = api.getMsWordUrl(filename);
     window.location.href = msWordUrl;
-    showStatus(`Đang mở ${filename} trong Word...`, 'success');
+    showStatus('Đang mở Word với WebDAV...', 'success');
   };
 
-  /**
-   * Tải file về máy
-   */
-  const handleDownload = (fileId, filename) => {
-    const downloadUrl = api.getDownloadUrl(fileId, filename);
+  const handleDownload = (filename) => {
+    const downloadUrl = api.getDownloadUrl(filename);
     window.open(downloadUrl, '_blank');
     showStatus('Đang tải file...', 'info');
   };
 
-  /**
-   * Xóa file (chỉ xóa version này, không xóa các versions khác)
-   */
-  const handleDelete = async (fileId, filename) => {
+  const handleDelete = async (filename) => {
     if (!confirm(`Bạn có chắc muốn xóa file "${filename}"?`)) {
       return;
     }
 
     try {
       setLoading(true);
-      await api.deleteDocument(fileId);
+      await api.deleteDocument(filename);
       showStatus('Xóa file thành công!', 'success');
       await loadFiles();
     } catch (error) {

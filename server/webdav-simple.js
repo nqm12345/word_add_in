@@ -26,7 +26,7 @@ const url = require('url');
 const config = require('./config');
 const { loadSSLCertificates } = require('./utils/ssl');
 const logger = require('./utils/logger');
-const { connectDB, findFileByName, findFileById, uploadFile, downloadFile, deleteFile, listFiles, createNewVersion } = require('./database');
+const { connectDB, findFileByName, uploadFile, downloadFile, deleteFile, listFiles } = require('./database');
 
 /**
  * Class xử lý WebDAV Server
@@ -65,9 +65,6 @@ class SimpleWebDAVServer {
     /**
      * ROUTER CHÍNH - Phân loại request và gọi handler tương ứng
      * 
-     * URL FORMAT MỚI: /id/:fileId/:filename
-     * Ví dụ: /id/507f1f77bcf86cd799439011/document.docx
-     * 
      * Word sẽ gọi theo thứ tự:
      * 1. OPTIONS → Kiểm tra server
      * 2. PROPFIND → Lấy info file
@@ -78,26 +75,11 @@ class SimpleWebDAVServer {
      * 7. UNLOCK → Mở khóa
      */
     async handleRequest(req, res) {
-        // Parse URL để lấy fileId và fileName
-        // URL mới: /id/:fileId/:filename
-        // URL cũ (fallback): /:filename
+        // Parse URL để lấy tên file
+        // Ví dụ: /document.docx → fileName = "document.docx"
         const parsedUrl = url.parse(req.url, true);
         const pathname = decodeURIComponent(parsedUrl.pathname);
-        
-        let fileId = null;
-        let fileName = null;
-        
-        // Check if URL matches new format: /id/:fileId/:filename
-        const idMatch = pathname.match(/^\/id\/([a-f0-9]{24})\/(.+)$/i);
-        if (idMatch) {
-            fileId = idMatch[1];      // ObjectId string
-            fileName = idMatch[2];     // filename.docx
-            logger.info(`WebDAV request: ID=${fileId}, File=${fileName}`);
-        } else {
-            // Fallback: URL cũ chỉ có filename
-            fileName = pathname.replace(/^\//, '');
-            logger.info(`WebDAV request (legacy): File=${fileName}`);
-        }
+        const fileName = pathname.replace(/^\//, '');  // Bỏ dấu / đầu tiên
 
         // Set headers cho mọi response
         this.setHeaders(res);
@@ -111,24 +93,23 @@ class SimpleWebDAVServer {
                     break;
                 case 'PROPFIND':
                     // Word lấy thông tin file (size, ngày tạo, content-type...)
-                    await this.handlePropfind(res, fileId, fileName);
+                    await this.handlePropfind(res, fileName);
                     break;
                 case 'GET':
                     // Word tải file xuống để mở và edit
-                    await this.handleGet(res, fileId, fileName);
+                    await this.handleGet(res, fileName);
                     break;
                 case 'PUT':
                     // Word lưu file lên server (khi user nhấn Ctrl+S)
-                    // ĐÃ SỬA: Tạo version mới, không xóa file cũ
-                    await this.handlePut(req, res, fileId, fileName);
+                    await this.handlePut(req, res, fileName);
                     break;
                 case 'DELETE':
                     // Xóa file
-                    await this.handleDelete(res, fileId, fileName);
+                    await this.handleDelete(res, fileName);
                     break;
                 case 'LOCK':
                     // Word khóa file để tránh conflict khi nhiều người edit
-                    await this.handleLock(res, fileId, fileName);
+                    await this.handleLock(res, fileName);
                     break;
                 case 'UNLOCK':
                     // Word mở khóa file khi đóng document
@@ -160,11 +141,10 @@ class SimpleWebDAVServer {
      * Word cần biết: size, ngày sửa, content-type... trước khi tải file
      * Response trả về dạng XML theo chuẩn WebDAV
      * 
-     * @param fileId - ID của file (nếu dùng URL mới)
      * @param fileName - Tên file cần lấy info. Nếu rỗng = lấy danh sách tất cả file
      */
-    async handlePropfind(res, fileId, fileName) {
-        if (!fileName && !fileId) {
+    async handlePropfind(res, fileName) {
+        if (!fileName) {
             // Không có fileName → Trả về danh sách tất cả files
             const files = await listFiles();
             
@@ -189,15 +169,8 @@ ${files.map(file => `  <D:response>
             res.writeHead(207, { 'Content-Type': 'application/xml; charset=utf-8' });
             res.end(xml);
         } else {
-            // Có fileId hoặc fileName → Trả về info của file cụ thể
-            let file = null;
-            
-            // Ưu tiên tìm theo ID nếu có
-            if (fileId) {
-                file = await findFileById(fileId);
-            } else {
-                file = await findFileByName(fileName);
-            }
+            // Có fileName → Trả về info của file cụ thể
+            const file = await findFileByName(fileName);
             
             if (!file) {
                 res.writeHead(404);
@@ -205,15 +178,14 @@ ${files.map(file => `  <D:response>
                 return;
             }
 
-            // XML chứa: tên file, size, ngày sửa, content-type, version
-            const version = file.metadata?.version || 1;
+            // XML chứa: tên file, size, ngày sửa, content-type
             const xml = `<?xml version="1.0" encoding="utf-8"?>
 <D:multistatus xmlns:D="DAV:">
   <D:response>
-    <D:href>/id/${file._id}/${encodeURIComponent(file.filename)}</D:href>
+    <D:href>/${encodeURIComponent(fileName)}</D:href>
     <D:propstat>
       <D:prop>
-        <D:displayname>${file.filename}</D:displayname>
+        <D:displayname>${fileName}</D:displayname>
         <D:getcontentlength>${file.length}</D:getcontentlength>
         <D:getlastmodified>${file.uploadDate.toUTCString()}</D:getlastmodified>
         <D:resourcetype/>
@@ -238,32 +210,23 @@ ${files.map(file => `  <D:response>
      * File được lưu tạm trong RAM/Temp của Windows, không save ra ổ cứng
      * 
      * Flow:
-     * 1. Word gửi: GET /id/:fileId/:filename
-     * 2. Server tìm file trong MongoDB theo ID
+     * 1. Word gửi: GET /document.docx
+     * 2. Server tìm file trong MongoDB
      * 3. Server trả về binary data của file
      * 4. Word nhận và mở file để edit
      * 
-     * @param fileId - ID của file (ưu tiên)
-     * @param fileName - Tên file (fallback nếu không có ID)
+     * @param fileName - Tên file cần tải (ví dụ: "document.docx")
      */
-    async handleGet(res, fileId, fileName) {
-        // Validate: phải có ID hoặc tên file
-        if (!fileId && !fileName) {
+    async handleGet(res, fileName) {
+        // Validate: phải có tên file
+        if (!fileName) {
             res.writeHead(400);
-            res.end('File ID or filename required');
+            res.end('Filename required');
             return;
         }
 
-        // Bước 1: Tìm file trong MongoDB
-        // Ưu tiên tìm theo ID (chính xác), fallback tìm theo tên
-        let file = null;
-        if (fileId) {
-            file = await findFileById(fileId);
-            logger.info(`GET: Finding file by ID: ${fileId}`);
-        } else {
-            file = await findFileByName(fileName);
-            logger.info(`GET: Finding file by name: ${fileName}`);
-        }
+        // Bước 1: Tìm file trong MongoDB theo tên
+        const file = await findFileByName(fileName);
         
         // Không tìm thấy → 404
         if (!file) {
@@ -272,10 +235,6 @@ ${files.map(file => `  <D:response>
             return;
         }
 
-        // Log version info
-        const version = file.metadata?.version || 1;
-        logger.info(`GET: Found ${file.filename} v${version}`);
-
         // Bước 2: Đọc nội dung file từ GridFS (binary data)
         const fileBuffer = await downloadFile(file._id);
         
@@ -283,10 +242,9 @@ ${files.map(file => `  <D:response>
         res.writeHead(200, {
             'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',  // MIME type cho .docx
             'Content-Length': fileBuffer.length,                    // Size của file
-            'Content-Disposition': `inline; filename="${file.filename}"`, // Tên file
+            'Content-Disposition': `inline; filename="${fileName}"`, // Tên file
             'Accept-Ranges': 'bytes',                               // Hỗ trợ partial download
-            'Cache-Control': 'no-cache',                            // Không cache, luôn lấy mới
-            'X-File-Version': version.toString()                    // Custom header: version
+            'Cache-Control': 'no-cache'                             // Không cache, luôn lấy mới
         });
         
         // Gửi binary data về cho Word
@@ -298,27 +256,26 @@ ${files.map(file => `  <D:response>
      * PUT - WORD LƯU FILE LÊN SERVER (KHI USER NHẤN CTRL+S)
      * ============================================================================
      * 
-     * ĐÃ CẬP NHẬT: Không xóa file cũ, tạo VERSION MỚI
+     * Đây là bước quan trọng nhất - khi user nhấn Ctrl+S trong Word,
+     * Word sẽ gửi toàn bộ nội dung file mới lên server qua PUT request
      * 
      * Flow:
      * 1. User edit file trong Word
      * 2. User nhấn Ctrl+S
-     * 3. Word gửi: PUT /id/:fileId/:filename với body = nội dung file mới
-     * 4. Server TÌM file theo ID (không theo tên)
-     * 5. Server KHÔNG XÓA file cũ (giữ làm lịch sử)
-     * 6. Server TẠO VERSION MỚI với nội dung mới
-     * 7. Server trả về 204 No Content (thành công)
-     * 8. Word hiện "Đã lưu" ✓
+     * 3. Word gửi: PUT /document.docx với body = nội dung file mới
+     * 4. Server xóa file cũ trong MongoDB
+     * 5. Server lưu file mới vào MongoDB
+     * 6. Server trả về 204 No Content (thành công)
+     * 7. Word hiện "Đã lưu" ✓
      * 
      * @param req - Request chứa binary data của file trong body
-     * @param fileId - ID của file đang edit
      * @param fileName - Tên file (ví dụ: "document.docx")
      */
-    async handlePut(req, res, fileId, fileName) {
-        // Validate: phải có ID hoặc tên file
-        if (!fileId && !fileName) {
+    async handlePut(req, res, fileName) {
+        // Validate: phải có tên file
+        if (!fileName) {
             res.writeHead(400);
-            res.end('File ID or filename required');
+            res.end('Filename required');
             return;
         }
 
@@ -334,39 +291,24 @@ ${files.map(file => `  <D:response>
                 // Ghép tất cả chunks thành 1 buffer hoàn chỉnh
                 const buffer = Buffer.concat(chunks);
                 
-                // Bước 1: Tìm file đang được edit
-                let originalFile = null;
-                if (fileId) {
-                    originalFile = await findFileById(fileId);
-                    logger.info(`PUT: Finding file by ID: ${fileId}`);
-                } else {
-                    originalFile = await findFileByName(fileName);
-                    logger.info(`PUT: Finding file by name: ${fileName}`);
+                // Bước 1: Kiểm tra file cũ có tồn tại không
+                const existingFile = await findFileByName(fileName);
+                if (existingFile) {
+                    // Xóa file cũ trước khi lưu file mới (update = delete + insert)
+                    await deleteFile(existingFile._id);
                 }
 
-                if (originalFile) {
-                    // Bước 2: TẠO VERSION MỚI (không xóa file cũ!)
-                    const newVersion = await createNewVersion(buffer, originalFile._id, {
-                        uploadedBy: 'Word Desktop',
-                        source: 'WebDAV',
-                        updatedAt: new Date()
-                    });
-                    
-                    logger.success(`PUT: Created version ${newVersion.version} of ${newVersion.filename}`);
-                } else {
-                    // File chưa tồn tại → Upload file mới (version 1)
-                    await uploadFile(buffer, fileName, {
-                        uploadedBy: 'Word Desktop',
-                        source: 'WebDAV',
-                        updatedAt: new Date()
-                    });
-                    
-                    logger.success(`PUT: Created new file ${fileName}`);
-                }
+                // Bước 2: Lưu file mới vào MongoDB GridFS
+                await uploadFile(buffer, fileName, {
+                    uploadedBy: 'Word Desktop',    // Đánh dấu nguồn upload
+                    source: 'WebDAV',              // Qua WebDAV protocol
+                    updatedAt: new Date()          // Thời gian cập nhật
+                });
 
-                // Bước 3: Trả về 204 No Content = thành công
+                // Bước 3: Trả về 204 No Content = thành công, không có body
                 res.writeHead(204);
                 res.end();
+                logger.success(`WebDAV PUT: ${fileName}`);
             } catch (error) {
                 logger.error(`WebDAV PUT error:`, error.message);
                 res.writeHead(500);
@@ -379,19 +321,14 @@ ${files.map(file => `  <D:response>
      * DELETE - Xóa file khỏi server
      * (Thường không gọi từ Word, mà từ web UI)
      */
-    async handleDelete(res, fileId, fileName) {
-        if (!fileId && !fileName) {
+    async handleDelete(res, fileName) {
+        if (!fileName) {
             res.writeHead(400);
-            res.end('File ID or filename required');
+            res.end('Filename required');
             return;
         }
 
-        let file = null;
-        if (fileId) {
-            file = await findFileById(fileId);
-        } else {
-            file = await findFileByName(fileName);
-        }
+        const file = await findFileByName(fileName);
         
         if (!file) {
             res.writeHead(404);
@@ -413,7 +350,7 @@ ${files.map(file => `  <D:response>
      * Note: Đây là simple lock, chỉ trả về token giả
      * Nếu cần lock thật, phải lưu lock state vào database
      */
-    async handleLock(res, fileId, fileName) {
+    async handleLock(res, fileName) {
         // Tạo lock token (unique ID)
         const lockToken = Date.now();
         
